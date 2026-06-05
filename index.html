@@ -649,7 +649,7 @@ async function uploadFile(file) {
 
     document.getElementById('sales-summary').style.display = 'block';
     renderCalc();
-    renderDetailTable(data.details);
+    // 매출 내역 탭은 월별 기록만 표시하므로 XLS 상세 렌더링 제거
   } catch(e) {
     zone.innerHTML = `<div class="icon">❌</div><p>파싱 오류: ${e.message}</p><div class="hint">다시 시도하려면 클릭</div>
       <input type="file" id="file-input" accept=".xls,.xlsx" style="display:none"
