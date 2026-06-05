@@ -1,0 +1,1162 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>미용실 직원 급여 관리</title>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Malgun Gothic',sans-serif;background:#f0f4f8;color:#333}
+header{background:linear-gradient(135deg,#4472C4,#2a4f9e);color:white;padding:18px 30px;display:flex;align-items:center;gap:12px}
+header h1{font-size:1.4rem}
+.container{max-width:1160px;margin:0 auto;padding:24px 20px}
+
+/* 탭 */
+.tabs{display:flex;gap:4px;margin-bottom:0}
+.tab-btn{padding:10px 24px;border:none;border-radius:8px 8px 0 0;cursor:pointer;font-size:.95rem;font-family:inherit;background:#c8d8f0;color:#555;transition:.15s}
+.tab-btn.active{background:white;color:#333;font-weight:700;box-shadow:0 -2px 6px rgba(0,0,0,.08)}
+.tab-pane{display:none}
+.tab-pane.active{display:block}
+.card{background:white;border-radius:0 12px 12px 12px;box-shadow:0 2px 10px rgba(0,0,0,.08);padding:24px}
+
+/* 직원 그리드 */
+.emp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-top:16px}
+.emp-card{border:2px solid #e0e8f5;border-radius:10px;padding:16px;transition:.15s}
+.emp-card:hover{border-color:#4472C4;box-shadow:0 2px 10px rgba(68,114,196,.15)}
+.emp-name{font-size:1.05rem;font-weight:700;margin-bottom:4px}
+.emp-meta{font-size:.82rem;color:#888;margin-bottom:8px}
+.rate-badges{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+.badge{padding:3px 10px;border-radius:20px;font-size:.78rem;font-weight:600}
+.badge-s{background:#e8f0fe;color:#4472C4}
+.badge-p{background:#fff0e8;color:#e6720a}
+.emp-actions{display:flex;gap:6px;margin-bottom:10px}
+.btn-sm{padding:4px 12px;border:none;border-radius:6px;cursor:pointer;font-size:.8rem;font-family:inherit}
+.btn-edit{background:#e8f0fe;color:#4472C4}
+.btn-del{background:#fce8e8;color:#c0392b}
+
+/* 월별 요약 미니 테이블 */
+.salary-mini{margin-top:10px;border-top:1px solid #f0f0f0;padding-top:10px}
+.salary-mini-title{font-size:.78rem;color:#888;margin-bottom:6px;font-weight:600}
+.salary-mini-rows{max-height:130px;overflow-y:auto}
+.salary-row{display:flex;justify-content:space-between;font-size:.78rem;padding:3px 0;border-bottom:1px solid #f8f8f8;color:#555;flex-wrap:nowrap;overflow:hidden}
+.sr-period{min-width:68px;flex-shrink:0}
+.sr-total{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sr-net{min-width:70px;text-align:right;flex-shrink:0;font-weight:700;color:#4472C4}
+.sr-btns{display:flex;gap:4px;margin-left:4px;flex-shrink:0}
+.sedit{color:#4472C4;cursor:pointer;opacity:.7;font-size:.8rem}
+.sedit:hover{opacity:1}
+.sdel{color:#c0392b;cursor:pointer;margin-left:6px;opacity:.6;font-size:.8rem}
+.sdel:hover{opacity:1}
+
+.add-btn{margin-top:16px;padding:10px 20px;background:#4472C4;color:white;border:none;border-radius:8px;cursor:pointer;font-size:.95rem;font-family:inherit;display:inline-flex;align-items:center;gap:6px}
+.add-btn:hover{background:#2a4f9e}
+
+/* 모달 */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;justify-content:center;align-items:center}
+.modal-overlay.open{display:flex}
+.modal{background:white;border-radius:12px;padding:28px;width:440px;box-shadow:0 8px 32px rgba(0,0,0,.2)}
+.modal h2{margin-bottom:18px;font-size:1.15rem}
+.form-group{margin-bottom:14px}
+.form-group label{display:block;font-size:.83rem;color:#555;margin-bottom:4px;font-weight:600}
+.form-group input,.form-group select{width:100%;padding:9px 12px;border:1.5px solid #ddd;border-radius:7px;font-size:.95rem;font-family:inherit;transition:.15s}
+.form-group input:focus{border-color:#4472C4;outline:none}
+.form-hint{font-size:.75rem;color:#aaa;margin-top:3px}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:20px}
+.btn-primary{padding:9px 20px;background:#4472C4;color:white;border:none;border-radius:7px;cursor:pointer;font-family:inherit}
+.btn-cancel{padding:9px 16px;background:#eee;color:#555;border:none;border-radius:7px;cursor:pointer;font-family:inherit}
+
+/* 급여 계산 레이아웃 */
+.payroll-layout{display:grid;grid-template-columns:230px 1fr;gap:20px}
+.emp-selector{display:flex;flex-direction:column;gap:8px}
+.emp-sel-item{padding:12px;border:2px solid #e0e8f5;border-radius:8px;cursor:pointer;transition:.15s}
+.emp-sel-item:hover{border-color:#4472C4}
+.emp-sel-item.active{border-color:#4472C4;background:#eef3fc}
+.emp-sel-item .sname{font-weight:700;font-size:.95rem}
+.emp-sel-item .srate{font-size:.75rem;color:#888;margin-top:2px}
+
+/* 업로드 존 */
+.upload-zone{border:2px dashed #b0c4e8;border-radius:10px;padding:26px;text-align:center;cursor:pointer;transition:.15s;margin-bottom:16px;background:#fafcff}
+.upload-zone:hover,.upload-zone.drag{border-color:#4472C4;background:#eef3fc}
+.upload-zone .icon{font-size:2rem;margin-bottom:8px}
+.upload-zone p{color:#777;font-size:.88rem}
+.upload-zone .hint{font-size:.75rem;color:#bbb;margin-top:4px}
+
+/* 감지 배너 */
+.detect-banner{background:#e8f5e9;border:1px solid #a5d6a7;border-radius:8px;padding:9px 14px;margin-bottom:12px;font-size:.85rem;color:#2e7d32;display:none;align-items:center;gap:8px}
+.detect-banner.show{display:flex}
+
+/* 기간 선택 */
+.period-row{display:flex;gap:8px;margin-bottom:14px;align-items:center;flex-wrap:wrap}
+.period-row label{font-size:.85rem;color:#666;font-weight:600}
+.period-row input,.period-row select{padding:7px 10px;border:1.5px solid #ddd;border-radius:7px;font-family:inherit;font-size:.85rem}
+
+/* 요약 카드 */
+.summary-cards{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.sum-card{background:#f8faff;border:1px solid #d8e4f5;border-radius:8px;padding:12px 14px}
+.sum-card .sc-title{font-size:.78rem;color:#888;margin-bottom:6px;font-weight:600}
+.sum-card .sc-total{font-size:1.15rem;font-weight:700}
+.sc-total.service{color:#4472C4}
+.sc-total.product{color:#e6720a}
+.sum-card .sc-sub{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+.sc-chip{font-size:.72rem;padding:2px 7px;border-radius:10px;background:white;border:1px solid #e0e8f5}
+
+/* 점판 편집 테이블 */
+.product-edit-box{background:#fff8f2;border:1.5px solid #f0d0b0;border-radius:10px;padding:16px;margin-bottom:14px}
+.product-edit-title{font-size:.88rem;font-weight:700;color:#c05a00;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
+.product-table{width:100%;border-collapse:collapse;font-size:.88rem}
+.product-table th{background:#f5e6d8;color:#7a3e00;padding:8px 10px;text-align:left;font-size:.8rem}
+.product-table td{padding:6px 8px;border-bottom:1px solid #f0e4d4}
+.product-table input{width:100%;padding:5px 8px;border:1.5px solid #e0c8a8;border-radius:5px;font-family:inherit;font-size:.85rem;background:white}
+.product-table input:focus{border-color:#e6720a;outline:none}
+.product-table .td-del{text-align:center;width:30px}
+.btn-del-row{background:none;border:none;color:#e74c3c;cursor:pointer;font-size:1rem;padding:2px 4px}
+.btn-add-row{background:#fff0e0;color:#e6720a;border:1.5px solid #f0d0b0;border-radius:6px;padding:5px 12px;cursor:pointer;font-size:.8rem;font-family:inherit;margin-top:8px}
+.product-total-row{display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:8px;border-top:1.5px solid #f0d0b0;font-size:.88rem;font-weight:600}
+.product-total-row .ptval{color:#e6720a;font-size:1.05rem}
+
+/* 직원 구매 차감 박스 */
+.purchase-box{background:#fef6f6;border:1.5px solid #f0b8b8;border-radius:10px;padding:16px;margin-bottom:14px}
+.purchase-title{font-size:.88rem;font-weight:700;color:#c0392b;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
+.purchase-table{width:100%;border-collapse:collapse;font-size:.88rem}
+.purchase-table th{background:#fde8e8;color:#922b21;padding:8px 10px;text-align:left;font-size:.8rem}
+.purchase-table td{padding:6px 8px;border-bottom:1px solid #f5d0d0}
+.purchase-table input{width:100%;padding:5px 8px;border:1.5px solid #f0b8b8;border-radius:5px;font-family:inherit;font-size:.85rem;background:white}
+.purchase-table input:focus{border-color:#c0392b;outline:none}
+.btn-add-purchase{background:#fde8e8;color:#c0392b;border:1.5px solid #f0b8b8;border-radius:6px;padding:5px 12px;cursor:pointer;font-size:.8rem;font-family:inherit;margin-top:8px}
+.purchase-total-row{display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:8px;border-top:1.5px solid #f0b8b8;font-size:.88rem;font-weight:600}
+.purchase-total-row .purval{color:#c0392b;font-size:1.05rem}
+
+/* 급여 계산 박스 */
+.calc-box{background:#f8faff;border:1.5px solid #d0dcf5;border-radius:10px;padding:18px;margin-bottom:14px}
+.calc-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;font-size:.9rem}
+.calc-row+.calc-row{border-top:1px solid #eef0f5}
+.calc-row .lbl{color:#555}
+.calc-row .val{font-weight:600}
+.calc-row.sec{margin-top:8px;padding-top:10px;border-top:2px solid #d0dcf5!important}
+.calc-row.net{font-size:1.2rem;color:#4472C4;font-weight:700;margin-top:8px;padding-top:10px;border-top:2px solid #4472C4!important}
+.tag-s{color:#4472C4;font-size:.72rem;background:#e8f0fe;padding:1px 6px;border-radius:8px;margin-left:4px}
+.tag-p{color:#e6720a;font-size:.72rem;background:#fff0e8;padding:1px 6px;border-radius:8px;margin-left:4px}
+.tag-d{color:#c0392b;font-size:.72rem}
+
+/* 액션 버튼 줄 */
+.action-row{display:flex;gap:10px;margin-top:4px}
+.save-btn{flex:1;padding:12px;background:linear-gradient(135deg,#27ae60,#1e8449);color:white;border:none;border-radius:10px;font-size:.95rem;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:.15s}
+.save-btn:hover{opacity:.9}
+.save-btn:disabled{opacity:.45;cursor:not-allowed}
+.dl-btn{flex:1;padding:12px;background:linear-gradient(135deg,#4472C4,#2a4f9e);color:white;border:none;border-radius:10px;font-size:.95rem;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:.15s}
+.dl-btn:hover{opacity:.9}
+.dl-btn:disabled{opacity:.45;cursor:not-allowed}
+
+/* 내역 탭 */
+.filter-row{display:flex;gap:8px;margin-bottom:14px}
+.filter-btn{padding:6px 16px;border:1.5px solid #ddd;border-radius:20px;background:white;cursor:pointer;font-size:.85rem;font-family:inherit;transition:.15s}
+.filter-btn.active{background:#4472C4;color:white;border-color:#4472C4}
+.detail-table{width:100%;border-collapse:collapse;font-size:.88rem}
+.detail-table th{background:#4472C4;color:white;padding:9px 12px;text-align:left}
+.detail-table td{padding:7px 12px;border-bottom:1px solid #f0f0f0}
+.detail-table tr:hover td{background:#f5f8ff}
+.detail-table .row-service td:first-child{border-left:3px solid #4472C4}
+.detail-table .row-product td:first-child{border-left:3px solid #e6720a}
+.cat-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:.73rem;font-weight:600}
+.cat-service{background:#e8f0fe;color:#4472C4}
+.cat-product{background:#fff0e8;color:#e6720a}
+
+/* 직원 체크박스 */
+.emp-check-item{display:flex;align-items:center;gap:5px;padding:5px 12px;border:1.5px solid #ddd;border-radius:20px;cursor:pointer;font-size:.83rem;transition:.15s;user-select:none}
+.emp-check-item:hover{border-color:#4472C4}
+.emp-check-item.checked{border-color:#4472C4;background:#eef3fc;color:#4472C4;font-weight:600}
+
+/* 토스트 */
+.toast{position:fixed;bottom:24px;right:24px;background:#2c3e50;color:white;padding:12px 20px;border-radius:8px;font-size:.88rem;opacity:0;transition:opacity .3s;z-index:999}
+.toast.show{opacity:1}
+
+@media(max-width:720px){
+  .payroll-layout{grid-template-columns:1fr}
+  .summary-cards{grid-template-columns:1fr}
+  .action-row{flex-direction:column}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <span>✂️</span>
+  <h1>미용실 직원 급여 관리</h1>
+</header>
+
+<div class="container">
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('payroll',this)">💰 급여 계산</button>
+    <button class="tab-btn" onclick="switchTab('employees',this)">👤 직원 관리</button>
+    <button class="tab-btn" onclick="switchTab('history',this)">📋 매출 내역</button>
+  </div>
+
+  <!-- ── 급여 계산 ──────────────────────────────────────────────── -->
+  <div id="tab-payroll" class="tab-pane active card">
+    <div class="payroll-layout">
+
+      <div>
+        <div style="font-weight:700;font-size:.88rem;color:#555;margin-bottom:10px">직원 선택</div>
+        <div id="emp-selector" class="emp-selector"></div>
+      </div>
+
+      <div>
+        <div class="period-row">
+          <label>급여 기간</label>
+          <input type="number" id="sel-year" style="width:82px" min="2020" max="2099">년
+          <select id="sel-month" style="width:75px">
+            <option value="1">1월</option><option value="2">2월</option>
+            <option value="3">3월</option><option value="4">4월</option>
+            <option value="5">5월</option><option value="6">6월</option>
+            <option value="7">7월</option><option value="8">8월</option>
+            <option value="9">9월</option><option value="10">10월</option>
+            <option value="11">11월</option><option value="12">12월</option>
+          </select>월
+        </div>
+
+        <div id="detect-banner" class="detect-banner">✅ <span id="detect-text"></span></div>
+
+        <div class="upload-zone" id="upload-zone"
+             onclick="document.getElementById('file-input').click()"
+             ondragover="event.preventDefault();this.classList.add('drag')"
+             ondragleave="this.classList.remove('drag')"
+             ondrop="handleDrop(event)">
+          <div class="icon">📂</div>
+          <p>POS 매출 엑셀(.xls) 파일을 클릭하거나 드래그</p>
+          <div class="hint">파일명: 이름_N월.xls → 직원·기간 자동 인식</div>
+          <input type="file" id="file-input" accept=".xls,.xlsx" style="display:none"
+                 onchange="uploadFile(this.files[0])">
+        </div>
+
+        <div id="sales-summary" style="display:none">
+
+          <div class="summary-cards">
+            <div class="sum-card">
+              <div class="sc-title">💇 시술 매출</div>
+              <div class="sc-total service" id="s-service-total">-</div>
+              <div class="sc-sub">
+                <span class="sc-chip" id="s-scnt">-건</span>
+                <span class="sc-chip">현금 <b id="s-scash">-</b></span>
+                <span class="sc-chip">카드 <b id="s-scard">-</b></span>
+                <span class="sc-chip">Pay <b id="s-spay">-</b></span>
+              </div>
+            </div>
+            <div class="sum-card">
+              <div class="sc-title">🧴 점판 매출 <span style="font-size:.72rem;color:#bbb">(아래서 수정 가능)</span></div>
+              <div class="sc-total product" id="s-product-total">-</div>
+              <div class="sc-sub">
+                <span class="sc-chip" id="s-pcnt">-건</span>
+                <span class="sc-chip">현금 <b id="s-pcash">-</b></span>
+                <span class="sc-chip">카드 <b id="s-pcard">-</b></span>
+                <span class="sc-chip">Pay <b id="s-ppay">-</b></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="product-edit-box">
+            <div class="product-edit-title">
+              <span>🧴 점판 항목 확인 / 수정</span>
+              <button class="btn-add-row" onclick="addProductRow()">＋ 항목 추가</button>
+            </div>
+            <table class="product-table">
+              <thead><tr><th>항목명</th><th>금액 (원)</th><th></th></tr></thead>
+              <tbody id="product-tbody"></tbody>
+            </table>
+            <div class="product-total-row">
+              <span>점판 합계</span>
+              <span class="ptval" id="pt-total">0원</span>
+            </div>
+          </div>
+
+          <div class="purchase-box">
+            <div class="purchase-title">
+              <span>📌 차감 항목 <span style="font-size:.72rem;font-weight:400;color:#e88">(급여합계에서 먼저 차감 후 세금 계산)</span></span>
+              <button class="btn-add-purchase" onclick="addPurchaseRow()">＋ 항목 추가</button>
+            </div>
+            <table class="purchase-table">
+              <thead><tr><th>항목명</th><th>금액 (원)</th><th></th></tr></thead>
+              <tbody id="purchase-tbody">
+                <tr><td colspan="3" style="color:#bbb;text-align:center;padding:10px">차감 항목 없음 — 추가 버튼으로 입력</td></tr>
+              </tbody>
+            </table>
+            <div class="purchase-total-row">
+              <span>차감 합계</span>
+              <span class="purval" id="pur-total">0원</span>
+            </div>
+          </div>
+
+          <div class="calc-box" id="calc-box">
+            <p style="color:#aaa;text-align:center">직원을 선택하면 급여가 계산됩니다</p>
+          </div>
+
+          <div class="action-row">
+            <button class="save-btn" id="save-btn" onclick="saveSalary()" disabled>💾 저장 (월별 기록)</button>
+            <button class="dl-btn"  id="dl-btn"   onclick="printPayslip()"  disabled>🖨️ 명세서 인쇄/PDF</button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 직원 관리 ──────────────────────────────────────────────── -->
+  <div id="tab-employees" class="tab-pane card">
+    <h2 style="font-size:1.05rem;margin-bottom:4px">직원 목록</h2>
+    <p style="color:#aaa;font-size:.82rem;margin-bottom:14px">시술·점판 수수료율 설정 및 월별 급여 이력 확인</p>
+    <div id="emp-grid" class="emp-grid"></div>
+    <button class="add-btn" onclick="openModal()">＋ 직원 추가</button>
+  </div>
+
+  <!-- ── 매출 내역 ──────────────────────────────────────────────── -->
+  <div id="tab-history" class="tab-pane card">
+    <h2 style="font-size:1.05rem;margin-bottom:12px">📋 월별 급여 기록</h2>
+    <div style="margin-bottom:12px">
+      <div style="font-size:.83rem;font-weight:600;color:#555;margin-bottom:7px">
+        직원 선택 <span style="font-size:.75rem;color:#aaa;font-weight:400">(복수 선택 가능)</span>
+      </div>
+      <div id="history-emp-checkboxes" style="display:flex;flex-wrap:wrap;gap:8px"></div>
+    </div>
+    <div id="detail-area">
+      <p style="color:#aaa;text-align:center;padding:30px">직원을 선택하면 저장된 월별 기록이 표시됩니다</p>
+    </div>
+  </div>
+</div>
+
+<!-- 직원 모달 -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <h2 id="modal-title">직원 추가</h2>
+    <div class="form-group"><label>이름 *</label><input type="text" id="f-name" placeholder="예: 이가영"></div>
+    <div class="form-group"><label>미용실명</label><input type="text" id="f-salon" placeholder="예: 무아몽헤어"></div>
+    <div class="form-group">
+      <label>시술 수수료율 (%) *</label>
+      <input type="number" id="f-rate" placeholder="예: 47" min="0" max="100" step="0.1">
+      <div class="form-hint">시술 매출 × 수수료율 = 시술 실입금</div>
+    </div>
+    <div class="form-group">
+      <label>점판 수수료율 (%)</label>
+      <input type="number" id="f-prate" placeholder="예: 50" min="0" max="100" step="0.1">
+      <div class="form-hint">점판 실입금 = (판매가 − 부가세10% − 원가50%) × 점판수수료율</div>
+    </div>
+    <div class="form-group"><label>직책</label><input type="text" id="f-role" placeholder="예: 디자이너"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">취소</button>
+      <button class="btn-primary" onclick="saveEmployee()">저장</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+window.onerror = function(msg, src, line) {
+  const d = document.createElement('div');
+  d.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#c0392b;color:white;padding:12px 16px;z-index:9999;font-size:13px;font-family:monospace';
+  d.textContent = 'JS 오류: ' + msg + ' (line ' + line + ')';
+  document.body.appendChild(d);
+};
+window.addEventListener('unhandledrejection', function(e) {
+  const d = document.createElement('div');
+  d.style.cssText = 'position:fixed;top:40px;left:0;right:0;background:#e67e22;color:white;padding:12px 16px;z-index:9999;font-size:13px;font-family:monospace';
+  d.textContent = 'Promise 오류: ' + (e.reason?.message || e.reason);
+  document.body.appendChild(d);
+});
+
+let employees = [];
+let selectedEmpId = null;
+let salesData = null;
+let editingId = null;
+let allDetails = [];
+
+const now = new Date();
+document.getElementById('sel-year').value  = now.getFullYear();
+document.getElementById('sel-month').value = now.getMonth() + 1;
+
+// ── XLS 파싱 (브라우저 내 SheetJS) ─────────────────────────────────────────
+function parseSalesXls(arrayBuffer, filename) {
+  const wb = XLSX.read(new Uint8Array(arrayBuffer), { type: 'array', codepage: 51949 });
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+
+  const stem = filename.replace(/\.[^.]+$/, '');
+  const m = stem.match(/^(.+?)_(\d{1,2})월$/);
+  const empName = m ? m[1] : null;
+  const month   = m ? parseInt(m[2]) : 0;
+  const year    = new Date().getFullYear();
+
+  function toInt(val) {
+    const s = String(val).replace(/,/g, '').trim();
+    if (!s || s === 'nan' || s === '-' || s === 'None') return 0;
+    const n = parseFloat(s);
+    return isNaN(n) ? 0 : Math.floor(n);
+  }
+
+  function catType(val) {
+    const s = String(val);
+    if (s.includes('점판소계')) return 'subtotal_product';
+    if (s.includes('시술소계')) return 'subtotal_service';
+    if (s.includes('합계소계') || (s.includes('합계') && s.includes('소계'))) return 'subtotal_all';
+    if (s.includes('합계'))  return 'total';
+    if (s.includes('점판'))  return 'product';
+    if (s.includes('시술'))  return 'service';
+    return 'other';
+  }
+
+  const totalRow = rows[rows.length - 1];
+  const serviceRows = [], productRows = [];
+  let serviceSub = null, productSub = null;
+
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i];
+    const t = catType(String(row[1] || ''));
+    if      (t === 'service')          serviceRows.push(row);
+    else if (t === 'product')          productRows.push(row);
+    else if (t === 'subtotal_service') serviceSub = row;
+    else if (t === 'subtotal_product') productSub = row;
+  }
+
+  function rowDetail(row, kind) {
+    const mainCat = String(row[2] || '').trim();
+    const detail  = String(row[3] || '').trim();
+    const menu = (mainCat && detail && mainCat !== detail) ? `${mainCat} - ${detail}` : (detail || mainCat);
+    return { menu, category: kind,
+      amount: toInt(row[4]), count: toInt(row[5]),
+      cash: toInt(row[9]), card: toInt(row[10]),
+      bank: toInt(row[11]), pay: toInt(row[12]),
+      avg_price: toInt(row[19]) };
+  }
+
+  const sub = (r, i) => r ? toInt(r[i]) : 0;
+  const details = [
+    ...serviceRows.filter(r => toInt(r[4]) > 0).map(r => rowDetail(r, 'service')),
+    ...productRows.filter(r => toInt(r[4]) > 0).map(r => rowDetail(r, 'product')),
+  ];
+
+  return {
+    emp_name: empName, month, year, xls_filename: stem,
+    total: toInt(totalRow[4]),   count: toInt(totalRow[5]),
+    cash:  toInt(totalRow[9]),   card:  toInt(totalRow[10]),
+    bank:  toInt(totalRow[11]),  pay:   toInt(totalRow[12]),
+    service_total: sub(serviceSub, 4), service_count: sub(serviceSub, 5),
+    service_cash:  sub(serviceSub, 9), service_card:  sub(serviceSub, 10),
+    service_bank:  sub(serviceSub,11), service_pay:   sub(serviceSub, 12),
+    product_total: sub(productSub, 4), product_count: sub(productSub, 5),
+    product_cash:  sub(productSub, 9), product_card:  sub(productSub, 10),
+    product_bank:  sub(productSub,11), product_pay:   sub(productSub, 12),
+    details,
+  };
+}
+
+// ── 직원 로드 ───────────────────────────────────────────────────────────────
+async function loadEmployees() {
+  const r = await fetch('/employees');
+  employees = await r.json();
+  renderEmpGrid();
+  renderEmpSelector();
+}
+
+async function renderEmpGrid() {
+  const g = document.getElementById('emp-grid');
+  if (!employees.length) {
+    g.innerHTML = '<p style="color:#aaa;padding:20px">등록된 직원이 없습니다</p>'; return;
+  }
+  const recordsArr = await Promise.all(employees.map(e =>
+    fetch(`/salary/${e.id}`).then(r => r.json())));
+
+  g.innerHTML = employees.map((e, idx) => {
+    const recs = recordsArr[idx];
+    const keys = Object.keys(recs).sort().reverse();
+    const miniRows = keys.slice(0, 6).map(k => {
+      const rec = recs[k];
+      return `<div class="salary-row">
+        <span class="sr-period">${rec.year}년 ${rec.month}월</span>
+        <span class="sr-total">매출 ${fmt(rec.service_total + rec.product_total)}</span>
+        <span class="sr-net">${fmt(rec.payroll.net)}원</span>
+        <span class="sr-btns">
+          <span class="sedit" onclick="loadSavedRecord('${e.id}','${rec.year}','${rec.month}')" title="수정">✏️</span>
+          <span class="sdel"  onclick="deleteSalary('${e.id}','${rec.year}','${rec.month}')"    title="삭제">✕</span>
+        </span>
+      </div>`;
+    }).join('');
+
+    return `<div class="emp-card">
+      <div class="emp-name">${e.name}</div>
+      <div class="emp-meta">${e.salon||''} · ${e.role||''}</div>
+      <div class="rate-badges">
+        <span class="badge badge-s">시술 ${e.commission_rate}%</span>
+        <span class="badge badge-p">점판 ${e.product_commission_rate||50}%</span>
+      </div>
+      <div class="emp-actions">
+        <button class="btn-sm btn-edit" onclick="openModal('${e.id}')">수정</button>
+        <button class="btn-sm btn-del"  onclick="deleteEmployee('${e.id}')">삭제</button>
+      </div>
+      ${keys.length ? `<div class="salary-mini">
+        <div class="salary-mini-title">📅 월별 급여 기록 (${keys.length}건)</div>
+        <div class="salary-mini-rows">${miniRows}</div>
+      </div>` : '<div style="font-size:.75rem;color:#bbb;margin-top:8px">저장된 급여 기록 없음</div>'}
+    </div>`;
+  }).join('');
+}
+
+function renderEmpSelector() {
+  const s = document.getElementById('emp-selector');
+  if (!employees.length) {
+    s.innerHTML = '<p style="color:#aaa;font-size:.82rem">직원 관리 탭에서 추가하세요</p>'; return;
+  }
+  s.innerHTML = employees.map(e => `
+    <div class="emp-sel-item ${selectedEmpId===e.id?'active':''}" onclick="selectEmp('${e.id}')">
+      <div class="sname">${e.name}</div>
+      <div class="srate">시술 ${e.commission_rate}% / 점판 ${e.product_commission_rate||50}%</div>
+    </div>
+  `).join('');
+}
+
+function selectEmp(id) {
+  if (selectedEmpId && selectedEmpId !== id) {
+    salesData = null; allDetails = [];
+    const zone = document.getElementById('upload-zone');
+    zone.innerHTML = `<div class="icon">📂</div>
+      <p>POS 매출 엑셀(.xls) 파일을 클릭하거나 드래그</p>
+      <div class="hint">파일명: 이름_N월.xls → 직원·기간 자동 인식</div>
+      <input type="file" id="file-input" accept=".xls,.xlsx" style="display:none"
+             onchange="uploadFile(this.files[0])">`;
+    document.getElementById('sales-summary').style.display = 'none';
+    document.getElementById('detect-banner').classList.remove('show');
+    document.getElementById('product-tbody').innerHTML =
+      '<tr><td colspan="3" style="color:#bbb;text-align:center;padding:10px">점판 항목 없음 — 추가 버튼으로 직접 입력</td></tr>';
+    document.getElementById('purchase-tbody').innerHTML =
+      '<tr><td colspan="3" style="color:#bbb;text-align:center;padding:10px">차감 항목 없음 — 추가 버튼으로 입력</td></tr>';
+    document.getElementById('pt-total').textContent  = '0원';
+    document.getElementById('pur-total').textContent = '0원';
+    document.getElementById('detail-area').innerHTML =
+      '<p style="color:#aaa;text-align:center;padding:40px">급여 계산 탭에서 파일을 업로드하면 표시됩니다</p>';
+  }
+  selectedEmpId = id;
+  renderEmpSelector();
+  renderCalc();
+}
+
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+  if (name === 'employees') renderEmpGrid();
+  if (name === 'history')   renderHistoryEmpCheckboxes();
+}
+
+// ── 파일 업로드 (브라우저 파싱) ──────────────────────────────────────────────
+async function uploadFile(file) {
+  if (!file) return;
+  const zone = document.getElementById('upload-zone');
+  zone.innerHTML = '<div class="icon">⏳</div><p>분석 중...</p>';
+
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    const data = parseSalesXls(arrayBuffer, file.name);
+
+    zone.innerHTML = `<div class="icon">✅</div><p>${file.name}</p><div class="hint">다른 파일로 바꾸려면 클릭</div>
+      <input type="file" id="file-input" accept=".xls,.xlsx" style="display:none"
+       onchange="uploadFile(this.files[0])">`;
+
+    salesData = data;
+
+    let detected = [];
+    if (data.emp_name) {
+      const matched = employees.find(e => e.name === data.emp_name);
+      if (matched) { selectedEmpId = matched.id; renderEmpSelector(); detected.push('직원: ' + data.emp_name); }
+    }
+    if (data.month > 0) {
+      document.getElementById('sel-month').value = data.month;
+      document.getElementById('sel-year').value  = data.year;
+      detected.push(`기간: ${data.year}년 ${data.month}월`);
+    }
+    if (detected.length) {
+      document.getElementById('detect-text').textContent = '자동 인식 → ' + detected.join(' / ');
+      document.getElementById('detect-banner').classList.add('show');
+    }
+
+    document.getElementById('s-service-total').textContent = fmt(data.service_total) + '원';
+    document.getElementById('s-scnt').textContent  = (data.service_count || 0) + '건';
+    document.getElementById('s-scash').textContent = fmt(data.service_cash);
+    document.getElementById('s-scard').textContent = fmt(data.service_card);
+    document.getElementById('s-spay').textContent  = fmt(data.service_pay);
+    document.getElementById('s-product-total').textContent = data.product_total > 0 ? fmt(data.product_total) + '원' : '없음';
+    document.getElementById('s-pcnt').textContent  = (data.product_count || 0) + '건';
+    document.getElementById('s-pcash').textContent = fmt(data.product_cash);
+    document.getElementById('s-pcard').textContent = fmt(data.product_card);
+    document.getElementById('s-ppay').textContent  = fmt(data.product_pay);
+
+    const productItems = data.details.filter(d => d.category === 'product');
+    initProductTable(productItems.length ? productItems : (data.product_total > 0 ? [{ menu: '점판', amount: data.product_total }] : []));
+
+    const purTbody = document.getElementById('purchase-tbody');
+    purTbody.innerHTML = '<tr><td colspan="3" style="color:#bbb;text-align:center;padding:10px">차감 항목 없음 — 추가 버튼으로 입력</td></tr>';
+    document.getElementById('pur-total').textContent = '0원';
+
+    document.getElementById('sales-summary').style.display = 'block';
+    renderCalc();
+    renderDetailTable(data.details);
+  } catch(e) {
+    zone.innerHTML = `<div class="icon">❌</div><p>파싱 오류: ${e.message}</p><div class="hint">다시 시도하려면 클릭</div>
+      <input type="file" id="file-input" accept=".xls,.xlsx" style="display:none"
+       onchange="uploadFile(this.files[0])">`;
+  }
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('upload-zone').classList.remove('drag');
+  uploadFile(e.dataTransfer.files[0]);
+}
+
+// ── 점판 편집 테이블 ────────────────────────────────────────────────────────
+function initProductTable(items) {
+  const tbody = document.getElementById('product-tbody');
+  tbody.innerHTML = '';
+  if (!items.length) {
+    tbody.innerHTML = '<tr><td colspan="3" style="color:#bbb;text-align:center;padding:10px">점판 항목 없음 — 추가 버튼으로 직접 입력</td></tr>';
+  } else {
+    items.forEach(item => addProductRow(item.menu || item.name, item.amount));
+  }
+  updateProductTotal();
+}
+
+function addProductRow(name = '', amount = 0) {
+  const tbody = document.getElementById('product-tbody');
+  const emptyRow = tbody.querySelector('td[colspan]');
+  if (emptyRow) emptyRow.parentElement.remove();
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><input type="text" value="${name}" placeholder="항목명" oninput="updateProductTotal()"></td>
+    <td><input type="number" value="${amount}" placeholder="0" min="0" oninput="updateProductTotal()"></td>
+    <td class="td-del"><button class="btn-del-row" onclick="removeProductRow(this)">✕</button></td>`;
+  tbody.appendChild(tr);
+  updateProductTotal();
+}
+
+function removeProductRow(btn) {
+  btn.closest('tr').remove();
+  const tbody = document.getElementById('product-tbody');
+  if (!tbody.querySelector('input'))
+    tbody.innerHTML = '<tr><td colspan="3" style="color:#bbb;text-align:center;padding:10px">점판 항목 없음 — 추가 버튼으로 직접 입력</td></tr>';
+  updateProductTotal();
+}
+
+function getProductItems() {
+  const items = [];
+  document.querySelectorAll('#product-tbody tr').forEach(tr => {
+    const inputs = tr.querySelectorAll('input');
+    if (inputs.length === 2) {
+      const name = inputs[0].value.trim() || '점판';
+      const amount = parseInt(inputs[1].value) || 0;
+      if (amount > 0) items.push({ name, amount });
+    }
+  });
+  return items;
+}
+
+function updateProductTotal() {
+  const items = getProductItems();
+  const total = items.reduce((s, i) => s + i.amount, 0);
+  document.getElementById('pt-total').textContent = fmt(total) + '원';
+  document.getElementById('s-product-total').textContent = total > 0 ? fmt(total) + '원' : '없음';
+  renderCalc();
+}
+
+// ── 차감 항목 ───────────────────────────────────────────────────────────────
+function addPurchaseRow(name = '', amount = 0) {
+  const tbody = document.getElementById('purchase-tbody');
+  const emptyRow = tbody.querySelector('td[colspan]');
+  if (emptyRow) emptyRow.parentElement.remove();
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><input type="text" value="${name}" placeholder="구매 항목명" oninput="updatePurchaseTotal()"></td>
+    <td><input type="number" value="${amount || ''}" placeholder="0" min="0" oninput="updatePurchaseTotal()"></td>
+    <td style="text-align:center;width:30px"><button class="btn-del-row" onclick="removePurchaseRow(this)">✕</button></td>`;
+  tbody.appendChild(tr);
+  updatePurchaseTotal();
+}
+
+function removePurchaseRow(btn) {
+  btn.closest('tr').remove();
+  const tbody = document.getElementById('purchase-tbody');
+  if (!tbody.querySelector('input'))
+    tbody.innerHTML = '<tr><td colspan="3" style="color:#bbb;text-align:center;padding:10px">차감 항목 없음 — 추가 버튼으로 입력</td></tr>';
+  updatePurchaseTotal();
+}
+
+function getPurchaseItems() {
+  const items = [];
+  document.querySelectorAll('#purchase-tbody tr').forEach(tr => {
+    const inputs = tr.querySelectorAll('input');
+    if (inputs.length === 2) {
+      const name = inputs[0].value.trim() || '구매';
+      const amount = parseInt(inputs[1].value) || 0;
+      if (amount > 0) items.push({ name, amount });
+    }
+  });
+  return items;
+}
+
+function updatePurchaseTotal() {
+  const total = getPurchaseItems().reduce((s, i) => s + i.amount, 0);
+  document.getElementById('pur-total').textContent = total > 0 ? '- ' + fmt(total) + '원' : '0원';
+  renderCalc();
+}
+
+// ── 급여 계산 표시 ──────────────────────────────────────────────────────────
+function renderCalc() {
+  const box = document.getElementById('calc-box');
+  const canAct = salesData && selectedEmpId;
+  document.getElementById('save-btn').disabled = !canAct;
+  document.getElementById('dl-btn').disabled   = !canAct;
+
+  if (!canAct) { box.innerHTML = '<p style="color:#aaa;text-align:center">직원을 선택하면 급여가 계산됩니다</p>'; return; }
+  const emp = employees.find(e => e.id === selectedEmpId);
+  if (!emp) return;
+
+  const sRate    = emp.commission_rate;
+  const pRate    = emp.product_commission_rate || 50;
+  const sTotal   = salesData.service_total || 0;
+  const pItems   = getProductItems();
+  const purItems = getPurchaseItems();
+  const pTotal   = pItems.reduce((s, i) => s + i.amount, 0);
+  const purTotal = purItems.reduce((s, i) => s + i.amount, 0);
+  const sGross   = Math.floor(sTotal * sRate / 100);
+  const pProfit  = Math.floor(pTotal * 0.4);
+  const pGross   = Math.floor(pProfit * pRate / 100);
+  const gross    = sGross + pGross;
+  const taxable  = gross - purTotal;
+  const it       = Math.floor(taxable * 0.03);
+  const lt       = Math.floor(taxable * 0.003);
+  const ded      = it + lt;
+  const net      = taxable - ded;
+
+  box.innerHTML = `
+    <div class="calc-row">
+      <span class="lbl">시술 매출 <span class="tag-s">수수료 ${sRate}%</span></span>
+      <span class="val">${fmt(sTotal)} × ${sRate}% = ${fmt(sGross)}원</span>
+    </div>
+    <div class="calc-row">
+      <span class="lbl">점판 매출 <span class="tag-p">부가세10%-원가50%-수수료율 ${pRate}%</span></span>
+      <span class="val">${pTotal > 0 ? fmt(pTotal) + ' → ' + fmt(pGross) + '원' : '해당없음'}</span>
+    </div>
+    ${pTotal > 0 ? `<div class="calc-row" style="font-size:.8rem;color:#aaa;padding-top:0;border-top:none">
+      <span class="lbl" style="padding-left:8px">└ ${fmt(pTotal)} − 부가세 ${fmt(Math.floor(pTotal*0.1))} − 원가 ${fmt(Math.floor(pTotal*0.5))} = ${fmt(pProfit)} × ${pRate}%</span>
+      <span></span></div>` : ''}
+    <div class="calc-row sec">
+      <span class="lbl" style="font-weight:600">급여 합계 (시술+점판)</span>
+      <span class="val">${fmt(gross)}원</span>
+    </div>
+    ${purTotal > 0 ? `
+    <div class="calc-row">
+      <span class="lbl"><span class="tag-d">−</span> 차감항목 (${purItems.length}건)</span>
+      <span class="val" style="color:#c0392b">- ${fmt(purTotal)}원</span>
+    </div>
+    <div class="calc-row">
+      <span class="lbl" style="font-size:.82rem;color:#888">과세 기준액</span>
+      <span class="val" style="font-size:.88rem">${fmt(taxable)}원</span>
+    </div>` : ''}
+    <div class="calc-row">
+      <span class="lbl"><span class="tag-d">−</span> 소득세 (3%)</span>
+      <span class="val" style="color:#c0392b">- ${fmt(it)}원</span>
+    </div>
+    <div class="calc-row">
+      <span class="lbl"><span class="tag-d">−</span> 지방소득세 (0.3%)</span>
+      <span class="val" style="color:#c0392b">- ${fmt(lt)}원</span>
+    </div>
+    <div class="calc-row net">
+      <span class="lbl">💳 최종 실입금액</span>
+      <span class="val">${fmt(net)}원</span>
+    </div>`;
+}
+
+// ── 저장 ────────────────────────────────────────────────────────────────────
+async function saveSalary() {
+  if (!salesData || !selectedEmpId) return;
+  const year  = parseInt(document.getElementById('sel-year').value);
+  const month = parseInt(document.getElementById('sel-month').value);
+  const body = {
+    employee_id:    selectedEmpId,
+    year, month,
+    service_total:  salesData.service_total || 0,
+    product_items:  getProductItems(),
+    purchase_items: getPurchaseItems(),
+    payment_details: { cash: salesData.cash, card: salesData.card, pay: salesData.pay },
+  };
+  const r = await fetch('/salary', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  const result = await r.json();
+  if (result.ok) { showToast('✅ 저장 완료!'); renderEmpGrid(); }
+  else showToast('저장 실패: ' + (result.error || ''));
+}
+
+// ── 명세서 인쇄 (브라우저 Print → PDF 저장) ────────────────────────────────
+function printPayslip() {
+  if (!salesData || !selectedEmpId) return;
+  const emp      = employees.find(e => e.id === selectedEmpId);
+  if (!emp) return;
+  const year     = parseInt(document.getElementById('sel-year').value);
+  const month    = parseInt(document.getElementById('sel-month').value);
+  const pItems   = getProductItems();
+  const purItems = getPurchaseItems();
+  const sTotal   = salesData.service_total || 0;
+  const pTotal   = pItems.reduce((s, i) => s + i.amount, 0);
+  const purTotal = purItems.reduce((s, i) => s + i.amount, 0);
+  const sRate    = emp.commission_rate;
+  const pRate    = emp.product_commission_rate || 50;
+  const sGross   = Math.floor(sTotal * sRate / 100);
+  const pProfit  = Math.floor(pTotal * 0.4);
+  const pGross   = Math.floor(pProfit * pRate / 100);
+  const gross    = sGross + pGross;
+  const taxable  = gross - purTotal;
+  const it       = Math.floor(taxable * 0.03);
+  const lt       = Math.floor(taxable * 0.003);
+  const net      = taxable - it - lt;
+  const salon    = emp.salon || '무아몽헤어';
+  const role     = emp.role  || '디자이너';
+
+  const f = n => (n || 0).toLocaleString('ko-KR');
+
+  const purRows = purItems.map(i =>
+    `<tr><td>${i.name}</td><td class="r red">- ${f(i.amount)}원</td></tr>`).join('');
+  const pNote = pTotal > 0
+    ? `<p class="note">※ 점판: ${f(pTotal)} − 부가세(${f(Math.floor(pTotal*0.1))}) − 원가(${f(Math.floor(pTotal*0.5))}) = ${f(pProfit)} × ${pRate}% = ${f(pGross)}원</p>`
+    : '';
+
+  const html = `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8">
+<title>${year}년 ${month}월 급여명세서 - ${emp.name}</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Nanum Gothic','Malgun Gothic',sans-serif;color:#1a1a1a;padding:24px;max-width:680px;margin:0 auto}
+  h1{text-align:center;font-size:2rem;letter-spacing:4px;margin-bottom:4px;color:#1a1a1a}
+  .subtitle{text-align:center;font-size:1.1rem;margin-bottom:6px;color:#333}
+  .info{text-align:right;font-size:.9rem;color:#555;margin-bottom:18px;line-height:1.8}
+  hr{border:none;border-top:2px solid #1a1a1a;margin:10px 0}
+  hr.thin{border-top:1px solid #ccc;margin:6px 0}
+  table{width:100%;border-collapse:collapse;margin-bottom:10px;font-size:.9rem}
+  th{background:#3a3a3a;color:white;padding:7px 10px;text-align:left;font-weight:700}
+  td{padding:6px 10px;border-bottom:1px solid #eee}
+  .r{text-align:right}
+  .sum{background:#e8ecf0;font-weight:700}
+  .red{color:#c0392b}
+  .note{font-size:.75rem;color:#999;margin-bottom:10px;padding-left:4px}
+  .net-box{background:#eaf4fb;border:2px solid #4472c4;border-radius:6px;text-align:center;padding:18px;margin:16px 0}
+  .net-box .net-amt{font-size:1.8rem;font-weight:800;color:#1a5276}
+  .net-box .net-lbl{font-size:.9rem;color:#555;margin-bottom:4px}
+  .footer{text-align:center;font-size:.9rem;color:#555;margin-top:20px}
+  @media print{body{padding:8px} .no-print{display:none}}
+</style></head><body>
+<h1>MUAMONG HAIR</h1>
+<hr>
+<div class="subtitle">${year}년 ${String(month).padStart(2,'0')}월 급여 명세표</div>
+<div class="info">미용실 : ${salon}<br>${role} : ${emp.name}</div>
+
+<table>
+  <thead><tr><th>수입 항목</th><th class="r">매출 금액</th><th class="r">수수료율</th><th class="r">실입금</th></tr></thead>
+  <tbody>
+    <tr><td>시술 매출</td><td class="r">${f(sTotal)}</td><td class="r">${sRate}%</td><td class="r">${f(sGross)}원</td></tr>
+    ${pTotal > 0 ? `<tr><td>점판 매출</td><td class="r">${f(pTotal)}</td><td class="r">${pRate}%</td><td class="r">${f(pGross)}원</td></tr>` : ''}
+    <tr class="sum"><td colspan="3">급여 합계</td><td class="r">${f(gross)}원</td></tr>
+  </tbody>
+</table>
+${pNote}
+
+${purItems.length ? `<table>
+  <thead><tr><th>차감 항목</th><th class="r">차감 금액</th></tr></thead>
+  <tbody>${purRows}
+    <tr class="sum"><td>차감 합계</td><td class="r red">- ${f(purTotal)}원</td></tr>
+  </tbody>
+</table>` : ''}
+
+<table>
+  <thead><tr><th>세금 공제 (3.3%)</th><th class="r">금액</th></tr></thead>
+  <tbody>
+    ${purTotal > 0 ? `<tr><td>과세 기준 (급여합계 − 차감)</td><td class="r">${f(taxable)}원</td></tr>` : ''}
+    <tr><td>소득세 (3%)</td><td class="r red">- ${f(it)}원</td></tr>
+    <tr><td>지방소득세 (0.3%)</td><td class="r red">- ${f(lt)}원</td></tr>
+    <tr class="sum"><td>공제 합계</td><td class="r red">- ${f(it+lt)}원</td></tr>
+  </tbody>
+</table>
+
+<div class="net-box">
+  <div class="net-lbl">실입금액</div>
+  <div class="net-amt">${f(net)}원</div>
+</div>
+
+<div class="footer">${emp.name} 선생님 수고하셨습니다.</div>
+
+<div class="no-print" style="text-align:center;margin-top:20px">
+  <button onclick="window.print()" style="padding:10px 28px;background:#4472C4;color:white;border:none;border-radius:6px;font-size:1rem;cursor:pointer">🖨️ 인쇄 / PDF 저장</button>
+</div>
+</body></html>`;
+
+  const win = window.open('', '_blank');
+  win.document.write(html);
+  win.document.close();
+  win.focus();
+}
+
+async function deleteSalary(empId, year, month) {
+  if (!confirm(`${year}년 ${month}월 급여 기록을 삭제할까요?`)) return;
+  await fetch(`/salary/${empId}/${year}/${month}`, { method: 'DELETE' });
+  showToast('삭제되었습니다');
+  renderEmpGrid();
+}
+
+async function loadSavedRecord(empId, year, month) {
+  const r = await fetch(`/salary/${empId}/${year}/${month}`);
+  if (r.status === 204) { showToast('기록을 찾을 수 없습니다'); return; }
+  const rec = await r.json();
+
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-payroll').classList.add('active');
+  document.querySelector('.tab-btn').classList.add('active');
+
+  selectedEmpId = empId;
+  renderEmpSelector();
+  document.getElementById('sel-year').value  = year;
+  document.getElementById('sel-month').value = parseInt(month);
+  await loadRecordData(rec, empId, parseInt(year), parseInt(month));
+  showToast(`${year}년 ${month}월 기록 불러왔습니다`);
+}
+
+async function checkSavedRecord() {
+  if (!selectedEmpId) return;
+  const year  = document.getElementById('sel-year').value;
+  const month = document.getElementById('sel-month').value;
+  if (!year || !month) return;
+  const r = await fetch(`/salary/${selectedEmpId}/${year}/${month}`);
+  if (r.status === 204) {
+    salesData = null;
+    document.getElementById('sales-summary').style.display = 'none';
+    document.getElementById('detect-banner').classList.remove('show');
+    resetUploadZone(); return;
+  }
+  const rec = await r.json();
+  await loadRecordData(rec, selectedEmpId, parseInt(year), parseInt(month));
+}
+
+function resetUploadZone() {
+  document.getElementById('upload-zone').innerHTML = `
+    <div class="icon">📂</div>
+    <p>POS 매출 엑셀(.xls) 파일을 클릭하거나 드래그</p>
+    <div class="hint">파일명: 이름_N월.xls → 직원·기간 자동 인식</div>
+    <input type="file" id="file-input" accept=".xls,.xlsx" style="display:none"
+           onchange="uploadFile(this.files[0])">`;
+}
+
+async function loadRecordData(rec, empId, year, month) {
+  const emp = employees.find(e => e.id === empId);
+  salesData = {
+    emp_name: emp?.name || '', month, year, xls_filename: '',
+    service_total: rec.service_total || 0, service_count: 0,
+    service_cash: rec.payment_details?.cash || 0, service_card: rec.payment_details?.card || 0,
+    service_pay: rec.payment_details?.pay || 0, service_bank: 0,
+    product_total: rec.product_total || 0, product_count: 0,
+    product_cash: 0, product_card: 0, product_pay: 0, product_bank: 0,
+    total: (rec.service_total || 0) + (rec.product_total || 0), details: [],
+  };
+
+  document.getElementById('s-service-total').textContent = fmt(salesData.service_total) + '원';
+  document.getElementById('s-scnt').textContent  = '-';
+  document.getElementById('s-scash').textContent = fmt(salesData.service_cash);
+  document.getElementById('s-scard').textContent = fmt(salesData.service_card);
+  document.getElementById('s-spay').textContent  = fmt(salesData.service_pay);
+  document.getElementById('s-product-total').textContent = salesData.product_total > 0 ? fmt(salesData.product_total) + '원' : '없음';
+  document.getElementById('s-pcnt').textContent  = '-';
+  document.getElementById('s-pcash').textContent = '0';
+  document.getElementById('s-pcard').textContent = '0';
+  document.getElementById('s-ppay').textContent  = '0';
+
+  initProductTable(rec.product_items || []);
+  const purTbody = document.getElementById('purchase-tbody');
+  purTbody.innerHTML = '';
+  (rec.purchase_items || []).forEach(item => addPurchaseRow(item.name, item.amount));
+  if (!purTbody.querySelector('input'))
+    purTbody.innerHTML = '<tr><td colspan="3" style="color:#bbb;text-align:center;padding:10px">차감 항목 없음</td></tr>';
+  updatePurchaseTotal();
+
+  document.getElementById('upload-zone').innerHTML = `
+    <div class="icon">📋</div>
+    <p>저장된 기록 (${year}년 ${month}월) — 아래에서 수정 후 다시 저장 가능</p>
+    <div class="hint">새 파일 업로드하려면 클릭</div>
+    <input type="file" id="file-input" accept=".xls,.xlsx" style="display:none" onchange="uploadFile(this.files[0])">`;
+
+  document.getElementById('detect-banner').classList.add('show');
+  document.getElementById('detect-text').textContent = `${year}년 ${month}월 저장된 기록 불러옴 — 수정 후 저장 버튼으로 덮어쓰기 가능`;
+  document.getElementById('sales-summary').style.display = 'block';
+  renderCalc();
+}
+
+document.getElementById('sel-year').addEventListener('change', checkSavedRecord);
+document.getElementById('sel-month').addEventListener('change', checkSavedRecord);
+
+// ── 매출 내역 탭 ────────────────────────────────────────────────────────────
+let historyChecked = new Set();
+let historyAllData = {};
+
+async function renderHistoryEmpCheckboxes() {
+  const box = document.getElementById('history-emp-checkboxes');
+  if (!employees.length) { box.innerHTML = '<span style="color:#aaa;font-size:.82rem">직원 없음</span>'; return; }
+  box.innerHTML = employees.map(e => `
+    <div class="emp-check-item ${historyChecked.has(e.id) ? 'checked' : ''}"
+         onclick="toggleHistoryEmp('${e.id}', this)">
+      ${historyChecked.has(e.id) ? '✓ ' : ''}${e.name}
+    </div>`).join('');
+}
+
+async function toggleHistoryEmp(id, el) {
+  if (historyChecked.has(id)) {
+    historyChecked.delete(id);
+    el.classList.remove('checked');
+    el.textContent = el.textContent.replace('✓ ', '');
+  } else {
+    historyChecked.add(id);
+    el.classList.add('checked');
+    el.textContent = '✓ ' + el.textContent;
+    if (!historyAllData[id]) {
+      const r = await fetch(`/salary/${id}`);
+      historyAllData[id] = await r.json();
+    }
+  }
+  renderHistoryCombined();
+}
+
+function renderHistoryCombined() {
+  const area = document.getElementById('detail-area');
+  if (!historyChecked.size) {
+    area.innerHTML = '<p style="color:#aaa;text-align:center;padding:30px">직원을 선택하면 저장된 월별 기록이 표시됩니다</p>';
+    return;
+  }
+  let rows = '';
+  for (const empId of historyChecked) {
+    const emp  = employees.find(e => e.id === empId);
+    const recs = historyAllData[empId] || {};
+    const keys = Object.keys(recs).sort().reverse();
+    if (!keys.length) {
+      rows += `<tr><td colspan="7" style="background:#f8f9fa;padding:8px 12px;color:#aaa">${emp?.name || empId} — 저장된 기록 없음</td></tr>`;
+      continue;
+    }
+    rows += `<tr><td colspan="7" style="background:#eef3fc;font-weight:700;padding:7px 12px;color:#4472C4">${emp?.name || empId}</td></tr>`;
+    keys.forEach(k => {
+      const rec = recs[k];
+      rows += `<tr>
+        <td>${rec.year}년 ${rec.month}월</td>
+        <td style="text-align:right">${fmt(rec.service_total)}</td>
+        <td style="text-align:right">${rec.product_total ? fmt(rec.product_total) : '-'}</td>
+        <td style="text-align:right;color:#c0392b">${rec.purchase_total ? '-' + fmt(rec.purchase_total) : '-'}</td>
+        <td style="text-align:right;color:#c0392b">-${fmt(rec.payroll?.deduction || 0)}</td>
+        <td style="text-align:right;font-weight:700;color:#4472C4">${fmt(rec.payroll?.net || 0)}원</td>
+        <td style="text-align:center">
+          <span style="cursor:pointer;color:#4472C4;font-size:.8rem"
+                onclick="loadSavedRecord('${empId}','${rec.year}','${rec.month}')">✏️</span>
+        </td></tr>`;
+    });
+  }
+  area.innerHTML = `<table class="detail-table">
+    <thead><tr>
+      <th>기간</th><th style="text-align:right">시술매출</th><th style="text-align:right">점판매출</th>
+      <th style="text-align:right">차감항목</th><th style="text-align:right">세금공제</th>
+      <th style="text-align:right">실입금액</th><th style="text-align:center">수정</th>
+    </tr></thead>
+    <tbody>${rows}</tbody></table>`;
+}
+
+function renderDetailTable(details) {
+  allDetails = details || [];
+  if (!allDetails.length) return;
+  applyDetailFilter('all');
+}
+
+function filterDetail(type, btn) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  applyDetailFilter(type);
+}
+
+function applyDetailFilter(type) {
+  const area = document.getElementById('detail-area');
+  if (!allDetails.length) return;
+  const rows = type === 'all' ? allDetails : allDetails.filter(d => d.category === type);
+  if (!rows.length) { area.innerHTML = '<p style="color:#aaa;text-align:center;padding:20px">해당 항목 없음</p>'; return; }
+  area.innerHTML = `<table class="detail-table">
+    <thead><tr>
+      <th>분류</th><th>메뉴명</th><th style="text-align:right">건수</th>
+      <th style="text-align:right">합계금액</th><th style="text-align:right">현금</th>
+      <th style="text-align:right">카드</th><th style="text-align:right">Pay</th>
+      <th style="text-align:right">통장</th><th style="text-align:right">평균단가</th>
+    </tr></thead>
+    <tbody>${rows.map(d => `
+      <tr class="row-${d.category}">
+        <td><span class="cat-badge cat-${d.category}">${d.category === 'service' ? '시술' : '점판'}</span></td>
+        <td>${d.menu}</td>
+        <td style="text-align:right">${d.count}</td>
+        <td style="text-align:right"><b>${fmt(d.amount)}</b></td>
+        <td style="text-align:right">${d.cash   ? fmt(d.cash)   : '-'}</td>
+        <td style="text-align:right">${d.card   ? fmt(d.card)   : '-'}</td>
+        <td style="text-align:right">${d.pay    ? fmt(d.pay)    : '-'}</td>
+        <td style="text-align:right">${d.bank   ? fmt(d.bank)   : '-'}</td>
+        <td style="text-align:right">${d.avg_price ? fmt(d.avg_price) : '-'}</td>
+      </tr>`).join('')}
+    </tbody></table>`;
+}
+
+// ── 직원 CRUD ────────────────────────────────────────────────────────────────
+function openModal(id = null) {
+  editingId = id;
+  const emp = id ? employees.find(e => e.id === id) : null;
+  document.getElementById('modal-title').textContent = id ? '직원 수정' : '직원 추가';
+  document.getElementById('f-name').value  = emp?.name  || '';
+  document.getElementById('f-salon').value = emp?.salon || '';
+  document.getElementById('f-rate').value  = emp?.commission_rate || '';
+  document.getElementById('f-prate').value = emp?.product_commission_rate || '';
+  document.getElementById('f-role').value  = emp?.role  || '';
+  document.getElementById('modal-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('f-name').focus(), 100);
+}
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+  editingId = null;
+}
+async function saveEmployee() {
+  const name  = document.getElementById('f-name').value.trim();
+  const salon = document.getElementById('f-salon').value.trim();
+  const rate  = parseFloat(document.getElementById('f-rate').value);
+  const prate = parseFloat(document.getElementById('f-prate').value) || 50;
+  const role  = document.getElementById('f-role').value.trim();
+  if (!name || isNaN(rate)) { showToast('이름과 시술 수수료율은 필수입니다'); return; }
+  const body   = { name, salon, commission_rate: rate, product_commission_rate: prate, role };
+  const url    = editingId ? `/employees/${editingId}` : '/employees';
+  const method = editingId ? 'PUT' : 'POST';
+  await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  closeModal();
+  await loadEmployees();
+  if (salesData) renderCalc();
+  showToast(editingId ? '수정 완료' : '직원 추가 완료');
+}
+async function deleteEmployee(id) {
+  if (!confirm('삭제하시겠습니까?')) return;
+  await fetch(`/employees/${id}`, { method: 'DELETE' });
+  if (selectedEmpId === id) { selectedEmpId = null; renderCalc(); }
+  await loadEmployees();
+  showToast('삭제되었습니다');
+}
+
+function fmt(n) { return (n || 0).toLocaleString('ko-KR'); }
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+document.getElementById('modal-overlay').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeModal();
+});
+
+loadEmployees();
+</script>
+</body>
+</html>
