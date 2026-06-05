@@ -450,8 +450,14 @@ function parseSalesXls(arrayBuffer, filename) {
 
 // ── 직원 로드 ───────────────────────────────────────────────────────────────
 async function loadEmployees() {
-  const r = await fetch('/employees');
-  employees = await r.json();
+  try {
+    const r = await fetch('/employees');
+    if (!r.ok) { showToast('API 오류 ' + r.status + ': D1 바인딩을 확인하세요'); employees = []; }
+    else employees = await r.json();
+  } catch(e) {
+    showToast('연결 오류: ' + e.message);
+    employees = [];
+  }
   renderEmpGrid();
   renderEmpSelector();
 }
