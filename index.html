@@ -880,146 +880,107 @@ function printPayslip() {
 <title>${year}년 ${String(month).padStart(2,'0')}월 급여명세서 - ${emp.name}</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&display=swap');
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Nanum Gothic','Malgun Gothic',sans-serif;color:#1a1a1a;background:white;
-     padding:30px 36px;max-width:720px;margin:0 auto;font-size:13.5px;line-height:1.5}
-/* 헤더 로고 */
-.hdr{text-align:center;margin-bottom:6px}
-.hdr img{height:36px;width:auto}
-hr.thick{border:none;border-top:2px solid #1a1a1a;margin:8px 0 16px}
-/* 제목 */
-.title{text-align:center;font-size:1.25rem;font-weight:700;margin-bottom:16px;color:#111}
-/* 우측 정보 */
-.info{text-align:right;font-size:.88rem;color:#333;line-height:2;margin-bottom:20px}
-/* 섹션 제목 */
-.sec{font-size:.9rem;font-weight:700;margin:18px 0 5px;color:#111}
-/* 테이블 */
-table{width:100%;border-collapse:collapse;margin-bottom:4px;font-size:.88rem}
+*{box-sizing:border-box;margin:0;padding:0;
+  -webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+body{font-family:'Nanum Gothic','Malgun Gothic',sans-serif;color:#1a1a1a;background:#fff;
+     padding:22px 28px;max-width:680px;margin:0 auto;font-size:12.5px;line-height:1.4}
+.hdr{text-align:center;margin-bottom:5px}
+.hdr img{height:30px;width:auto}
+hr.thick{border:none;border-top:2px solid #1a1a1a;margin:6px 0 12px}
+.title{text-align:center;font-size:1.15rem;font-weight:700;margin-bottom:10px;color:#111}
+.info{text-align:right;font-size:.83rem;color:#333;line-height:1.9;margin-bottom:14px}
+.sec{font-size:.85rem;font-weight:700;margin:12px 0 4px;color:#111}
+table{width:100%;border-collapse:collapse;margin-bottom:3px;font-size:.83rem}
 table,th,td{border:1px solid #cccccc}
-th{background:#3d3d3d;color:#fff;padding:9px 14px;text-align:center;font-weight:700;font-size:.88rem}
-td{padding:8px 14px;color:#111}
-.tl{text-align:left}
-.tc{text-align:center}
-.tr{text-align:right}
-/* 급여합계 행 */
-.sum-row td{background:#e8ecf0;font-weight:700}
-/* 차감/공제 합계 행 */
-.red-row td{background:#fdecea}
+th{background:#3d3d3d;color:#fff;padding:7px 12px;text-align:center;font-weight:700}
+td{padding:6px 12px;color:#111}
+.tl{text-align:left}.tc{text-align:center}.tr{text-align:right}
+.sum-row td{background:#e8ecf0!important;font-weight:700}
+.red-row td{background:#fdecea!important}
 .red{color:#c0392b}
-/* 점판 주석 */
-.note{font-size:.76rem;color:#aaa;margin:4px 0 14px 2px}
-/* 산출내역 요약 박스 */
-.summary-box{border:1px solid #dddddd;background:#f7f7f7;
-             padding:10px 16px;font-size:.78rem;text-align:center;
-             margin:6px 0 14px;color:#333;line-height:1.9}
-/* 실입금액 박스 */
-.net-box{border:2.5px solid #4472C4;background:#eaf4fb;border-radius:3px;
-         text-align:center;padding:22px 16px;margin:0 0 20px}
-.net-txt{font-size:1.75rem;font-weight:800;color:#1a5276}
-/* 하단 */
-hr.thin{border:none;border-top:1px solid #cccccc;margin:6px 0 16px}
-.footer-msg{text-align:center;font-size:1rem;color:#333;margin-bottom:12px}
+.note{font-size:.72rem;color:#aaa;margin:3px 0 10px 2px}
+.summary-box{border:1px solid #ddd;background:#f7f7f7!important;
+             padding:7px 14px;font-size:.74rem;text-align:center;
+             margin:5px 0 10px;color:#333;line-height:1.8}
+.net-box{border:2.5px solid #4472C4;background:#eaf4fb!important;border-radius:3px;
+         text-align:center;padding:16px;margin:0 0 14px}
+.net-txt{font-size:1.6rem;font-weight:800;color:#1a5276}
+hr.thin{border:none;border-top:1px solid #ccc;margin:4px 0 12px}
+.footer-msg{text-align:center;font-size:.95rem;color:#333;margin-bottom:8px}
 .footer-img{text-align:center}
-.footer-img img{height:44px;width:auto}
+.footer-img img{height:36px;width:auto}
 @media print{
-  body{padding:14px 18px}
+  body{padding:0}
   .no-print{display:none}
-  @page{margin:12mm}
+  @page{size:A4;margin:12mm 14mm}
 }
 </style></head><body>
 
 <div class="hdr"><img src="${BASE}/static/logo/wordmark.png" alt="MUAMONG HAIR"></div>
 <hr class="thick">
-
 <div class="title">${year}년 ${String(month).padStart(2,'0')}월 급여 명세표</div>
 <div class="info">미용실 : ${salon}<br>${role} : ${emp.name}</div>
 
 <div class="sec">1. 매출 내역</div>
 <table>
-  <thead>
-    <tr>
-      <th class="tl" style="width:35%">수입 항목</th>
-      <th class="tc" style="width:22%">매출 금액</th>
-      <th class="tc" style="width:15%">수수료율</th>
-      <th class="tc" style="width:28%">실입금</th>
-    </tr>
-  </thead>
+  <thead><tr>
+    <th class="tl" style="width:34%">수입 항목</th>
+    <th class="tc" style="width:22%">매출 금액</th>
+    <th class="tc" style="width:16%">수수료율</th>
+    <th class="tc" style="width:28%">실입금</th>
+  </tr></thead>
   <tbody>
-    <tr>
-      <td class="tl">시술 매출</td>
-      <td class="tr">${f(sTotal)}</td>
-      <td class="tc">${sRate}%</td>
-      <td class="tr">${f(sGross)}</td>
-    </tr>
-    ${pTotal > 0 ? `<tr>
-      <td class="tl">점판 매출</td>
-      <td class="tr">${f(pTotal)}</td>
-      <td class="tc">${pRate}%</td>
-      <td class="tr">${f(pGross)}</td>
-    </tr>` : ''}
-    <tr class="sum-row">
-      <td colspan="3" class="tr" style="font-weight:700">급여 합계</td>
-      <td class="tr">${f(gross)}</td>
+    <tr><td class="tl">시술 매출</td><td class="tr">${f(sTotal)}</td><td class="tc">${sRate}%</td><td class="tr">${f(sGross)}</td></tr>
+    ${pTotal>0?`<tr><td class="tl">점판 매출</td><td class="tr">${f(pTotal)}</td><td class="tc">${pRate}%</td><td class="tr">${f(pGross)}</td></tr>`:''}
+    <tr class="sum-row"><td colspan="3" class="tr">급여 합계</td><td class="tr">${f(gross)}</td></tr>
+  </tbody>
+</table>
+${pTotal>0?`<p class="note">※ 점판 : ${f(pTotal)} &nbsp;부가세(${f(Math.floor(pTotal*0.1))}) &nbsp;원가(${f(Math.floor(pTotal*0.5))}) = ${f(pProfit)} × ${pRate}% = ${f(pGross)}원</p>`:''}
+
+<div class="sec">2. 차감 항목</div>
+<table>
+  <thead><tr>
+    <th class="tl" style="width:72%">차감 항목</th>
+    <th class="tc" style="width:28%">차감 금액</th>
+  </tr></thead>
+  <tbody>
+    ${purItems.length>0
+      ? purItems.map(i=>`<tr><td class="tl">${i.name}</td><td class="tr red">- ${f(i.amount)}원</td></tr>`).join('')
+      : `<tr><td class="tc" style="color:#aaa">-</td><td class="tc" style="color:#aaa">-</td></tr>`}
+    <tr class="red-row">
+      <td class="tl" style="font-weight:700">차감 합계</td>
+      <td class="tr red" style="font-weight:700">${purItems.length>0?`- ${f(purTotal)}원`:'-'}</td>
     </tr>
   </tbody>
 </table>
-${pTotal > 0 ? `<p class="note">※ 점판 : ${f(pTotal)} &nbsp;부가세(${f(Math.floor(pTotal*0.1))}) &nbsp;원가(${f(Math.floor(pTotal*0.5))}) = ${f(pProfit)} × ${pRate}% = ${f(pGross)}원</p>` : ''}
-
-${purItems.length > 0 ? `
-<div class="sec">2. 차감 항목</div>
-<table>
-  <thead>
-    <tr>
-      <th class="tl" style="width:72%">차감 항목</th>
-      <th class="tc" style="width:28%">차감 금액</th>
-    </tr>
-  </thead>
-  <tbody>
-    ${purItems.map(i=>`<tr><td class="tl">${i.name}</td><td class="tr red">- ${f(i.amount)}원</td></tr>`).join('')}
-    <tr class="red-row">
-      <td class="tl" style="font-weight:700">차감 합계</td>
-      <td class="tr red" style="font-weight:700">- ${f(purTotal)}원</td>
-    </tr>
-  </tbody>
-</table>` : ''}
 
 <div class="sec">3. 세금 공제 (3.3%)</div>
 <table>
-  <thead>
-    <tr>
-      <th class="tl" style="width:72%">공제 항목</th>
-      <th class="tc" style="width:28%">공제 금액</th>
-    </tr>
-  </thead>
+  <thead><tr>
+    <th class="tl" style="width:72%">공제 항목</th>
+    <th class="tc" style="width:28%">공제 금액</th>
+  </tr></thead>
   <tbody>
-    ${purTotal > 0 ? `<tr>
-      <td class="tl">과세 기준 &nbsp;(${f(gross)} &nbsp;차감 ${f(purTotal)})</td>
-      <td class="tr">${f(taxable)}원</td>
-    </tr>` : ''}
+    ${purTotal>0?`<tr><td class="tl">과세 기준 &nbsp;(${f(gross)} &nbsp;차감 ${f(purTotal)})</td><td class="tr">${f(taxable)}원</td></tr>`:''}
     <tr><td class="tl">소득세 (3%)</td><td class="tr red">- ${f(it)}원</td></tr>
     <tr><td class="tl">지방소득세 (0.3%)</td><td class="tr red">- ${f(lt)}원</td></tr>
-    <tr class="red-row">
-      <td class="tl" style="font-weight:700">공제 합계</td>
-      <td class="tr red" style="font-weight:700">- ${f(it+lt)}원</td>
-    </tr>
+    <tr class="red-row"><td class="tl" style="font-weight:700">공제 합계</td><td class="tr red" style="font-weight:700">- ${f(it+lt)}원</td></tr>
   </tbody>
 </table>
 
 <div class="sec">4. 산출내역 요약</div>
 <div class="summary-box">${summaryParts}</div>
 
-<div class="net-box">
-  <span class="net-txt">실입금액 &nbsp;${f(net)}원</span>
-</div>
+<div class="net-box"><span class="net-txt">실입금액 &nbsp;${f(net)}원</span></div>
 
 <hr class="thin">
 <div class="footer-msg">${emp.name} 선생님 수고하셨습니다.</div>
 <div class="footer-img"><img src="${BASE}/static/logo/symbol.png" alt="무아몽 심볼"></div>
 
-<div class="no-print" style="text-align:center;margin-top:28px">
+<div class="no-print" style="text-align:center;margin-top:20px">
   <button onclick="window.print()"
-    style="padding:10px 32px;background:#4472C4;color:white;border:none;
-           border-radius:6px;font-size:1rem;cursor:pointer;font-family:inherit">
+    style="padding:9px 28px;background:#4472C4;color:#fff;border:none;
+           border-radius:6px;font-size:.95rem;cursor:pointer;font-family:inherit">
     🖨️ 인쇄 / PDF 저장
   </button>
 </div>
