@@ -380,14 +380,39 @@ function parseSalesXls(arrayBuffer, filename) {
   const table = doc.querySelector('TABLE, table');
   if (!table) throw new Error('테이블을 찾을 수 없습니다');
 
-  // 모든 tr → 셀 텍스트 배열
+  // rowspan/colspan 처리하여 pandas read_html과 동일한 2D 배열 생성
+  const spanMap = {}; // {rowIdx: {colIdx: value}}
   const rows = [];
+  let rowIdx = 0;
   for (const tr of table.querySelectorAll('tr')) {
-    const cells = [];
+    if (!spanMap[rowIdx]) spanMap[rowIdx] = {};
+    const row = [];
+    let colIdx = 0;
     for (const td of tr.querySelectorAll('td, th')) {
-      cells.push(td.textContent.replace(/,/g, '').trim());
+      // rowspan으로 채워진 컬럼 먼저 삽입
+      while (spanMap[rowIdx][colIdx] !== undefined) {
+        row.push(spanMap[rowIdx][colIdx]);
+        colIdx++;
+      }
+      const text = td.textContent.replace(/,/g, '').trim();
+      const rowspan = parseInt(td.getAttribute('rowspan') || '1');
+      const colspan = parseInt(td.getAttribute('colspan') || '1');
+      for (let c = 0; c < colspan; c++) {
+        row.push(text);
+        for (let r = 1; r < rowspan; r++) {
+          if (!spanMap[rowIdx + r]) spanMap[rowIdx + r] = {};
+          spanMap[rowIdx + r][colIdx + c] = text;
+        }
+      }
+      colIdx += colspan;
     }
-    if (cells.length > 0) rows.push(cells);
+    // 행 끝에 남은 rowspan 셀
+    while (spanMap[rowIdx][colIdx] !== undefined) {
+      row.push(spanMap[rowIdx][colIdx]);
+      colIdx++;
+    }
+    if (row.length > 0) rows.push(row);
+    rowIdx++;
   }
 
   if (rows.length < 2) throw new Error('데이터 행이 없습니다');
