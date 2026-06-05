@@ -9,9 +9,13 @@ import pandas as pd
 from flask import Flask, jsonify, render_template, request, send_file
 
 app = Flask(__name__)
+_data_dir = Path(os.environ.get('DATA_DIR', str(Path(__file__).parent / 'data')))
+_data_dir.mkdir(parents=True, exist_ok=True)
+(Path(__file__).parent / 'uploads').mkdir(parents=True, exist_ok=True)
+
 app.config['UPLOAD_FOLDER'] = Path(__file__).parent / 'uploads'
-app.config['DATA_FILE']     = Path(__file__).parent / 'data' / 'employees.json'
-app.config['SALARY_FILE']   = Path(__file__).parent / 'data' / 'salary_records.json'
+app.config['DATA_FILE']     = _data_dir / 'employees.json'
+app.config['SALARY_FILE']   = _data_dir / 'salary_records.json'
 
 # ── 직원 데이터 ───────────────────────────────────────────────────────────────
 
