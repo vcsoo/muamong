@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>미용실 직원 급여 관리</title>
-<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Malgun Gothic',sans-serif;background:#f0f4f8;color:#333}
@@ -375,15 +374,23 @@ document.getElementById('sel-month').value = now.getMonth() + 1;
 
 // ── XLS 파싱 (브라우저 내 SheetJS) ─────────────────────────────────────────
 function parseSalesXls(arrayBuffer, filename) {
-  let wb;
-  try {
-    const str = new TextDecoder('euc-kr').decode(arrayBuffer);
-    wb = XLSX.read(str, { type: 'string' });
-  } catch(e) {
-    wb = XLSX.read(new Uint8Array(arrayBuffer), { type: 'array' });
+  // EUC-KR HTML 형식 XLS → DOMParser로 직접 파싱
+  const htmlStr = new TextDecoder('euc-kr').decode(arrayBuffer);
+  const doc = new DOMParser().parseFromString(htmlStr, 'text/html');
+  const table = doc.querySelector('TABLE, table');
+  if (!table) throw new Error('테이블을 찾을 수 없습니다');
+
+  // 모든 tr → 셀 텍스트 배열
+  const rows = [];
+  for (const tr of table.querySelectorAll('tr')) {
+    const cells = [];
+    for (const td of tr.querySelectorAll('td, th')) {
+      cells.push(td.textContent.replace(/,/g, '').trim());
+    }
+    if (cells.length > 0) rows.push(cells);
   }
-  const ws = wb.Sheets[wb.SheetNames[0]];
-  const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+
+  if (rows.length < 2) throw new Error('데이터 행이 없습니다');
 
   const stem = filename.replace(/\.[^.]+$/, '');
   const m = stem.match(/^(.+?)_(\d{1,2})월$/);
@@ -392,8 +399,8 @@ function parseSalesXls(arrayBuffer, filename) {
   const year    = new Date().getFullYear();
 
   function toInt(val) {
-    const s = String(val).replace(/,/g, '').trim();
-    if (!s || s === 'nan' || s === '-' || s === 'None') return 0;
+    const s = String(val || '').replace(/,/g, '').trim();
+    if (!s || s === '-') return 0;
     const n = parseFloat(s);
     return isNaN(n) ? 0 : Math.floor(n);
   }
@@ -402,20 +409,20 @@ function parseSalesXls(arrayBuffer, filename) {
     const s = String(val);
     if (s.includes('점판소계')) return 'subtotal_product';
     if (s.includes('시술소계')) return 'subtotal_service';
-    if (s.includes('합계소계') || (s.includes('합계') && s.includes('소계'))) return 'subtotal_all';
-    if (s.includes('합계'))  return 'total';
-    if (s.includes('점판'))  return 'product';
-    if (s.includes('시술'))  return 'service';
+    if (s.includes('점판'))    return 'product';
+    if (s.includes('시술'))    return 'service';
     return 'other';
   }
 
+  // 마지막 행 = 총합계
   const totalRow = rows[rows.length - 1];
   const serviceRows = [], productRows = [];
   let serviceSub = null, productSub = null;
 
+  // rows[0]은 헤더(직원명/구분/...) → 1부터 순회
   for (let i = 1; i < rows.length; i++) {
     const row = rows[i];
-    const t = catType(String(row[1] || ''));
+    const t = catType(row[1] || '');
     if      (t === 'service')          serviceRows.push(row);
     else if (t === 'product')          productRows.push(row);
     else if (t === 'subtotal_service') serviceSub = row;
@@ -423,8 +430,8 @@ function parseSalesXls(arrayBuffer, filename) {
   }
 
   function rowDetail(row, kind) {
-    const mainCat = String(row[2] || '').trim();
-    const detail  = String(row[3] || '').trim();
+    const mainCat = (row[2] || '').trim();
+    const detail  = (row[3] || '').trim();
     const menu = (mainCat && detail && mainCat !== detail) ? `${mainCat} - ${detail}` : (detail || mainCat);
     return { menu, category: kind,
       amount: toInt(row[4]), count: toInt(row[5]),
