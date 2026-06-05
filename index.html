@@ -3,208 +3,413 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>미용실 직원 급여 관리</title>
+<title>무아몽헤어 급여 관리</title>
+<link rel="icon" type="image/png" href="/static/logo/footer w.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap">
 <style>
+:root{
+  --color-bg:#fff;
+  --color-surface:#f8f8f8;
+  --color-border:#e0e0e0;
+  --color-border-strong:#bbb;
+  --color-text-primary:#111;
+  --color-text-secondary:#555;
+  --color-text-disabled:#aaa;
+  --color-accent:#111;
+  --color-accent-hover:#333;
+  --color-danger:#c0392b;
+  --radius-xs:4px;
+  --radius-sm:6px;
+  --radius-md:8px;
+  --radius-lg:12px;
+  --radius-pill:999px;
+  --space-1:4px;
+  --space-2:8px;
+  --space-3:12px;
+  --space-4:16px;
+  --space-5:20px;
+  --space-6:24px;
+  --space-7:28px;
+  --space-8:32px;
+  --font-xs:.75rem;
+  --font-sm:.875rem;
+  --font-base:1rem;
+  --font-md:1.0625rem;
+  --font-lg:1.125rem;
+  --font-xl:1.25rem;
+}
+/* ── Reset & Base ── */
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Malgun Gothic',sans-serif;background:#f0f4f8;color:#333}
-header{background:linear-gradient(135deg,#4472C4,#2a4f9e);color:white;padding:18px 30px;display:flex;align-items:center;gap:12px}
-header h1{font-size:1.4rem}
-.container{max-width:1160px;margin:0 auto;padding:24px 20px}
+html{font-size:62.5%}
+body{font-family:'Noto Sans KR','Malgun Gothic',sans-serif;font-size:1.4rem;line-height:1.5;background:var(--color-bg);color:var(--color-text-primary);display:flex;flex-direction:column;min-height:100vh}
 
-/* 탭 */
-.tabs{display:flex;gap:4px;margin-bottom:0}
-.tab-btn{padding:10px 24px;border:none;border-radius:8px 8px 0 0;cursor:pointer;font-size:.95rem;font-family:inherit;background:#c8d8f0;color:#555;transition:.15s}
-.tab-btn.active{background:white;color:#333;font-weight:700;box-shadow:0 -2px 6px rgba(0,0,0,.08)}
+/* ── Header ── */
+header{background:#fff;border-bottom:1px solid var(--color-border);padding:0 var(--space-8);display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:50}
+header img.wordmark{height:28px;width:auto}
+header nav{display:flex}
+header nav button{background:none;border:none;font-family:inherit;font-size:1.4rem;color:var(--color-text-secondary);padding:0 var(--space-5);height:56px;cursor:pointer;border-bottom:2px solid transparent;transition:.15s;letter-spacing:-.01em}
+header nav button:hover{color:var(--color-text-primary)}
+header nav button.active{color:var(--color-text-primary);font-weight:700;border-bottom:2px solid var(--color-text-primary)}
+
+/* ── Footer ── */
+footer.site-footer{background:#111;padding:var(--space-5) var(--space-8)}
+footer.site-footer .footer-inner{display:flex;align-items:flex-end;justify-content:space-between}
+footer.site-footer img.footer-logo{height:40px;width:auto}
+.footer-right{display:flex;flex-direction:column;align-items:flex-end;gap:var(--space-1)}
+.footer-family{display:flex;align-items:center;gap:var(--space-2)}
+.family-label{font-size:1.1rem;color:#555;font-weight:600}
+.family-link{font-size:1.1rem;color:#888;text-decoration:none;transition:.15s}
+.family-link:hover{color:#ccc}
+.family-sep{color:#444;font-size:1.1rem}
+footer.site-footer .copyright{font-size:1.1rem;color:#555;line-height:1}
+
+/* ── 콘텐츠 영역 고정 ── */
+.card{min-height:520px}
+.payroll-left{min-height:440px}
+.payroll-right{height:520px;overflow-y:auto;padding-right:var(--space-1)}
+.payroll-right::-webkit-scrollbar{width:4px}
+.payroll-right::-webkit-scrollbar-track{background:transparent}
+.payroll-right::-webkit-scrollbar-thumb{background:#ddd;border-radius:2px}
+#tab-employees .emp-grid{min-height:360px}
+#tab-history #detail-area{min-height:360px}
+
+/* ── Layout ── */
+.container{max-width:1280px;margin:0 auto;padding:var(--space-6) var(--space-6);flex:1}
+
+/* ── Tabs (hidden, nav replaces) ── */
+.tabs{display:none}
 .tab-pane{display:none}
 .tab-pane.active{display:block}
-.card{background:white;border-radius:0 12px 12px 12px;box-shadow:0 2px 10px rgba(0,0,0,.08);padding:24px}
+.card{background:#fff;border-radius:var(--radius-lg);box-shadow:0 1px 4px rgba(0,0,0,.08);padding:var(--space-6);margin-top:var(--space-5)}
 
-/* 직원 그리드 */
-.emp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-top:16px}
-.emp-card{border:2px solid #e0e8f5;border-radius:10px;padding:16px;transition:.15s}
-.emp-card:hover{border-color:#4472C4;box-shadow:0 2px 10px rgba(68,114,196,.15)}
-.emp-name{font-size:1.05rem;font-weight:700;margin-bottom:4px}
-.emp-meta{font-size:.82rem;color:#888;margin-bottom:8px}
-.rate-badges{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
-.badge{padding:3px 10px;border-radius:20px;font-size:.78rem;font-weight:600}
-.badge-s{background:#e8f0fe;color:#4472C4}
-.badge-p{background:#fff0e8;color:#e6720a}
-.emp-actions{display:flex;gap:6px;margin-bottom:10px}
-.btn-sm{padding:4px 12px;border:none;border-radius:6px;cursor:pointer;font-size:.8rem;font-family:inherit}
-.btn-edit{background:#e8f0fe;color:#4472C4}
-.btn-del{background:#fce8e8;color:#c0392b}
+/* ── 직원 그리드 ── */
+.emp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:var(--space-4);margin-top:var(--space-4)}
+.emp-card{border:1px solid var(--color-border);border-radius:var(--radius-md);padding:var(--space-4);transition:.15s;background:#fff}
+.emp-card:hover{border-color:var(--color-border-strong);box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.emp-name{font-size:1.5rem;font-weight:700;margin-bottom:var(--space-1)}
+.emp-meta{font-size:1.2rem;color:#888;margin-bottom:var(--space-2)}
+.rate-badges{display:flex;gap:var(--space-1);margin-bottom:var(--space-2);flex-wrap:wrap}
+.badge{padding:2px var(--space-2);border-radius:var(--radius-pill);font-size:1.1rem;font-weight:600}
+.badge-s{background:#f0f0f0;color:#333}
+.badge-p{background:#e8e8e8;color:#555}
+.emp-actions{display:flex;gap:var(--space-1);margin-bottom:var(--space-2)}
+.btn-sm{padding:var(--space-1) var(--space-3);border:1px solid var(--color-border);border-radius:var(--radius-xs);cursor:pointer;font-size:1.2rem;font-family:inherit;background:#fff;transition:.15s}
+.btn-edit{color:#333}
+.btn-edit:hover{background:#f5f5f5}
+.btn-del{color:var(--color-danger);border-color:#f5c6c6}
+.btn-del:hover{background:#fdf0f0}
 
-/* 월별 요약 미니 테이블 */
-.salary-mini{margin-top:10px;border-top:1px solid #f0f0f0;padding-top:10px}
-.salary-mini-title{font-size:.78rem;color:#888;margin-bottom:6px;font-weight:600}
+/* ── 월별 요약 미니 ── */
+.salary-mini{margin-top:var(--space-2);border-top:1px solid var(--color-border);padding-top:var(--space-2)}
+.salary-mini-title{font-size:1.1rem;color:#888;margin-bottom:var(--space-1);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
 .salary-mini-rows{max-height:130px;overflow-y:auto}
-.salary-row{display:flex;justify-content:space-between;font-size:.78rem;padding:3px 0;border-bottom:1px solid #f8f8f8;color:#555;flex-wrap:nowrap;overflow:hidden}
+.salary-row{display:flex;justify-content:space-between;font-size:1.1rem;padding:var(--space-1) 0;border-bottom:1px solid #f5f5f5;color:var(--color-text-secondary);flex-wrap:nowrap;overflow:hidden}
 .sr-period{min-width:68px;flex-shrink:0}
 .sr-total{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.sr-net{min-width:70px;text-align:right;flex-shrink:0;font-weight:700;color:#4472C4}
-.sr-btns{display:flex;gap:4px;margin-left:4px;flex-shrink:0}
-.sedit{color:#4472C4;cursor:pointer;opacity:.7;font-size:.8rem}
+.sr-net{min-width:70px;text-align:right;flex-shrink:0;font-weight:700;color:var(--color-text-primary)}
+.sr-btns{display:flex;gap:var(--space-1);margin-left:var(--space-1);flex-shrink:0}
+.sedit{color:var(--color-text-secondary);cursor:pointer;opacity:.7;font-size:1.2rem}
 .sedit:hover{opacity:1}
-.sdel{color:#c0392b;cursor:pointer;margin-left:6px;opacity:.6;font-size:.8rem}
+.sdel{color:var(--color-danger);cursor:pointer;margin-left:var(--space-1);opacity:.6;font-size:1.2rem}
 .sdel:hover{opacity:1}
 
-.add-btn{margin-top:16px;padding:10px 20px;background:#4472C4;color:white;border:none;border-radius:8px;cursor:pointer;font-size:.95rem;font-family:inherit;display:inline-flex;align-items:center;gap:6px}
-.add-btn:hover{background:#2a4f9e}
+/* ── 버튼 ── */
+.add-btn{margin-top:var(--space-4);padding:var(--space-2) var(--space-5);background:var(--color-accent);color:#fff;border:none;border-radius:var(--radius-md);cursor:pointer;font-size:1.4rem;font-family:inherit;display:inline-flex;align-items:center;gap:var(--space-1);transition:.15s;font-weight:500}
+.add-btn:hover{background:var(--color-accent-hover)}
 
-/* 모달 */
+/* ── 모달 ── */
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;justify-content:center;align-items:center}
 .modal-overlay.open{display:flex}
-.modal{background:white;border-radius:12px;padding:28px;width:440px;box-shadow:0 8px 32px rgba(0,0,0,.2)}
-.modal h2{margin-bottom:18px;font-size:1.15rem}
-.form-group{margin-bottom:14px}
-.form-group label{display:block;font-size:.83rem;color:#555;margin-bottom:4px;font-weight:600}
-.form-group input,.form-group select{width:100%;padding:9px 12px;border:1.5px solid #ddd;border-radius:7px;font-size:.95rem;font-family:inherit;transition:.15s}
-.form-group input:focus{border-color:#4472C4;outline:none}
-.form-hint{font-size:.75rem;color:#aaa;margin-top:3px}
-.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:20px}
-.btn-primary{padding:9px 20px;background:#4472C4;color:white;border:none;border-radius:7px;cursor:pointer;font-family:inherit}
-.btn-cancel{padding:9px 16px;background:#eee;color:#555;border:none;border-radius:7px;cursor:pointer;font-family:inherit}
+.modal{background:#fff;border-radius:var(--radius-lg);padding:var(--space-7);width:440px;box-shadow:0 8px 32px rgba(0,0,0,.16)}
+.modal h2{margin-bottom:var(--space-5);font-size:1.6rem;font-weight:700}
+.form-group{margin-bottom:var(--space-4)}
+.form-group label{display:block;font-size:1.2rem;color:var(--color-text-secondary);margin-bottom:var(--space-1);font-weight:600}
+.form-group input,.form-group select{width:100%;padding:var(--space-2) var(--space-3);border:1px solid var(--color-border);border-radius:var(--radius-sm);font-size:1.4rem;font-family:inherit;transition:.15s;outline:none}
+.form-group input:focus,.form-group select:focus{border-color:var(--color-text-primary);box-shadow:0 0 0 3px rgba(0,0,0,.08)}
+.form-hint{font-size:1.1rem;color:var(--color-text-disabled);margin-top:var(--space-1)}
+.modal-actions{display:flex;justify-content:flex-end;gap:var(--space-2);margin-top:var(--space-5)}
+.btn-primary{padding:var(--space-2) var(--space-5);background:var(--color-accent);color:#fff;border:none;border-radius:var(--radius-sm);cursor:pointer;font-family:inherit;font-size:1.4rem;font-weight:500;transition:.15s}
+.btn-primary:hover{background:var(--color-accent-hover)}
+.btn-cancel{padding:var(--space-2) var(--space-4);background:#f5f5f5;color:var(--color-text-secondary);border:1px solid var(--color-border);border-radius:var(--radius-sm);cursor:pointer;font-family:inherit;font-size:1.4rem;transition:.15s}
+.btn-cancel:hover{background:#eee}
 
-/* 급여 계산 레이아웃 */
-.payroll-layout{display:grid;grid-template-columns:230px 1fr;gap:20px}
-.emp-selector{display:flex;flex-direction:column;gap:8px}
-.emp-sel-item{padding:12px;border:2px solid #e0e8f5;border-radius:8px;cursor:pointer;transition:.15s}
-.emp-sel-item:hover{border-color:#4472C4}
-.emp-sel-item.active{border-color:#4472C4;background:#eef3fc}
-.emp-sel-item .sname{font-weight:700;font-size:.95rem}
-.emp-sel-item .srate{font-size:.75rem;color:#888;margin-top:2px}
+/* ── 급여 계산 레이아웃 ── */
+.payroll-layout{display:grid;grid-template-columns:220px 1fr;gap:var(--space-5)}
+.emp-selector{display:flex;flex-direction:column;gap:var(--space-2)}
+.emp-sel-item{padding:var(--space-3);border:1px solid var(--color-border);border-radius:var(--radius-md);cursor:pointer;transition:.15s;background:#fff}
+.emp-sel-item:hover{border-color:var(--color-border-strong);background:#fafafa}
+.emp-sel-item.active{border-color:var(--color-text-primary);background:#f5f5f5}
+.emp-sel-item .sname{font-weight:700;font-size:1.4rem}
+.emp-sel-item .srate{font-size:1.1rem;color:#888;margin-top:var(--space-1)}
 
-/* 업로드 존 */
-.upload-zone{border:2px dashed #b0c4e8;border-radius:10px;padding:26px;text-align:center;cursor:pointer;transition:.15s;margin-bottom:16px;background:#fafcff}
-.upload-zone:hover,.upload-zone.drag{border-color:#4472C4;background:#eef3fc}
-.upload-zone .icon{font-size:2rem;margin-bottom:8px}
-.upload-zone p{color:#777;font-size:.88rem}
-.upload-zone .hint{font-size:.75rem;color:#bbb;margin-top:4px}
+/* ── 업로드 존 ── */
+.upload-zone{border:1.5px dashed var(--color-border-strong);border-radius:var(--radius-md);height:150px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;cursor:pointer;transition:.15s;margin-bottom:var(--space-4);background:#fafafa;overflow:hidden;padding:0 var(--space-4)}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--color-text-primary);background:#f5f5f5}
+.upload-zone .icon{font-size:2.4rem;margin-bottom:var(--space-1)}
+.upload-zone p{color:#666;font-size:1.3rem}
+.upload-zone .hint{font-size:1.1rem;color:var(--color-text-disabled);margin-top:2px}
 
-/* 감지 배너 */
-.detect-banner{background:#e8f5e9;border:1px solid #a5d6a7;border-radius:8px;padding:9px 14px;margin-bottom:12px;font-size:.85rem;color:#2e7d32;display:none;align-items:center;gap:8px}
+/* ── 감지 배너 ── */
+.detect-banner{background:#f5f5f5;border:1px solid var(--color-border);border-radius:var(--radius-md);padding:var(--space-2) var(--space-4);margin-bottom:var(--space-3);font-size:1.3rem;color:var(--color-text-primary);display:none;align-items:center;gap:var(--space-2)}
 .detect-banner.show{display:flex}
 
-/* 기간 선택 */
-.period-row{display:flex;gap:8px;margin-bottom:14px;align-items:center;flex-wrap:wrap}
-.period-row label{font-size:.85rem;color:#666;font-weight:600}
-.period-row input,.period-row select{padding:7px 10px;border:1.5px solid #ddd;border-radius:7px;font-family:inherit;font-size:.85rem}
+/* ── 기간 선택 ── */
+.period-row{display:flex;gap:var(--space-2);margin-bottom:var(--space-4);align-items:center;flex-wrap:wrap}
+.period-row label{font-size:1.3rem;color:var(--color-text-secondary);font-weight:600}
+.period-row input,.period-row select{padding:var(--space-1) var(--space-2);border:1px solid var(--color-border);border-radius:var(--radius-sm);font-family:inherit;font-size:1.3rem;outline:none}
+.period-row input:focus,.period-row select:focus{border-color:var(--color-text-primary)}
 
-/* 요약 카드 */
-.summary-cards{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
-.sum-card{background:#f8faff;border:1px solid #d8e4f5;border-radius:8px;padding:12px 14px}
-.sum-card .sc-title{font-size:.78rem;color:#888;margin-bottom:6px;font-weight:600}
-.sum-card .sc-total{font-size:1.15rem;font-weight:700}
-.sc-total.service{color:#4472C4}
-.sc-total.product{color:#e6720a}
-.sum-card .sc-sub{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
-.sc-chip{font-size:.72rem;padding:2px 7px;border-radius:10px;background:white;border:1px solid #e0e8f5}
+/* ── 요약 카드 ── */
+.summary-cards{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3);margin-bottom:var(--space-4)}
+.sum-card{background:#f8f8f8;border:1px solid var(--color-border);border-radius:var(--radius-md);padding:var(--space-3) var(--space-4)}
+.sum-card .sc-title{font-size:1.1rem;color:#888;margin-bottom:var(--space-1);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.sum-card .sc-total{font-size:1.8rem;font-weight:700;color:var(--color-text-primary)}
+.sc-total.service{color:var(--color-text-primary)}
+.sc-total.product{color:#444}
+.sum-card .sc-sub{display:flex;gap:var(--space-1);margin-top:var(--space-1);flex-wrap:wrap}
+.sc-chip{font-size:1.1rem;padding:2px var(--space-1);border-radius:var(--radius-pill);background:#fff;border:1px solid var(--color-border);color:var(--color-text-secondary)}
 
-/* 점판 편집 테이블 */
-.product-edit-box{background:#fff8f2;border:1.5px solid #f0d0b0;border-radius:10px;padding:16px;margin-bottom:14px}
-.product-edit-title{font-size:.88rem;font-weight:700;color:#c05a00;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
-.product-table{width:100%;border-collapse:collapse;font-size:.88rem}
-.product-table th{background:#f5e6d8;color:#7a3e00;padding:8px 10px;text-align:left;font-size:.8rem}
-.product-table td{padding:6px 8px;border-bottom:1px solid #f0e4d4}
-.product-table input{width:100%;padding:5px 8px;border:1.5px solid #e0c8a8;border-radius:5px;font-family:inherit;font-size:.85rem;background:white}
-.product-table input:focus{border-color:#e6720a;outline:none}
-.product-table .td-del{text-align:center;width:30px}
-.btn-del-row{background:none;border:none;color:#e74c3c;cursor:pointer;font-size:1rem;padding:2px 4px}
-.btn-add-row{background:#fff0e0;color:#e6720a;border:1.5px solid #f0d0b0;border-radius:6px;padding:5px 12px;cursor:pointer;font-size:.8rem;font-family:inherit;margin-top:8px}
-.product-total-row{display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:8px;border-top:1.5px solid #f0d0b0;font-size:.88rem;font-weight:600}
-.product-total-row .ptval{color:#e6720a;font-size:1.05rem}
+/* ── 점판 편집 ── */
+.product-edit-box{background:#f8f8f8;border:1px solid var(--color-border);border-radius:var(--radius-md);padding:var(--space-4);margin-bottom:var(--space-4)}
+.product-edit-title{font-size:1.3rem;font-weight:700;color:var(--color-text-primary);margin-bottom:var(--space-3);display:flex;justify-content:space-between;align-items:center}
+.product-table{width:100%;border-collapse:collapse;font-size:1.3rem}
+.product-table th{background:#ebebeb;color:var(--color-text-secondary);padding:var(--space-2) var(--space-3);text-align:left;font-size:1.2rem;font-weight:600}
+.product-table td{padding:var(--space-1) var(--space-2);border-bottom:1px solid var(--color-border)}
+.product-table input{width:100%;padding:var(--space-1) var(--space-2);border:1px solid var(--color-border);border-radius:var(--radius-xs);font-family:inherit;font-size:1.3rem;background:#fff;outline:none}
+.product-table input:focus{border-color:var(--color-text-primary)}
+.product-table .td-del{text-align:center;width:32px}
+.btn-del-row{background:none;border:none;color:var(--color-danger);cursor:pointer;font-size:1.4rem;padding:2px var(--space-1)}
+.btn-add-row{background:#fff;color:var(--color-text-secondary);border:1px solid var(--color-border);border-radius:var(--radius-xs);padding:var(--space-1) var(--space-3);cursor:pointer;font-size:1.2rem;font-family:inherit;margin-top:var(--space-2)}
+.btn-add-row:hover{background:#f5f5f5}
+.product-total-row{display:flex;justify-content:space-between;align-items:center;margin-top:var(--space-3);padding-top:var(--space-2);border-top:1px solid var(--color-border);font-size:1.3rem;font-weight:600}
+.product-total-row .ptval{color:var(--color-text-primary);font-size:1.5rem}
 
-/* 직원 구매 차감 박스 */
-.purchase-box{background:#fef6f6;border:1.5px solid #f0b8b8;border-radius:10px;padding:16px;margin-bottom:14px}
-.purchase-title{font-size:.88rem;font-weight:700;color:#c0392b;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
-.purchase-table{width:100%;border-collapse:collapse;font-size:.88rem}
-.purchase-table th{background:#fde8e8;color:#922b21;padding:8px 10px;text-align:left;font-size:.8rem}
-.purchase-table td{padding:6px 8px;border-bottom:1px solid #f5d0d0}
-.purchase-table input{width:100%;padding:5px 8px;border:1.5px solid #f0b8b8;border-radius:5px;font-family:inherit;font-size:.85rem;background:white}
-.purchase-table input:focus{border-color:#c0392b;outline:none}
-.btn-add-purchase{background:#fde8e8;color:#c0392b;border:1.5px solid #f0b8b8;border-radius:6px;padding:5px 12px;cursor:pointer;font-size:.8rem;font-family:inherit;margin-top:8px}
-.purchase-total-row{display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:8px;border-top:1.5px solid #f0b8b8;font-size:.88rem;font-weight:600}
-.purchase-total-row .purval{color:#c0392b;font-size:1.05rem}
+/* ── 직원 구매 차감 ── */
+.purchase-box{background:#f8f8f8;border:1px solid var(--color-border);border-radius:var(--radius-md);padding:var(--space-4);margin-bottom:var(--space-4)}
+.purchase-title{font-size:1.3rem;font-weight:700;color:var(--color-text-primary);margin-bottom:var(--space-3);display:flex;justify-content:space-between;align-items:center}
+.purchase-table{width:100%;border-collapse:collapse;font-size:1.3rem}
+.purchase-table th{background:#ebebeb;color:var(--color-text-secondary);padding:var(--space-2) var(--space-3);text-align:left;font-size:1.2rem;font-weight:600}
+.purchase-table td{padding:var(--space-1) var(--space-2);border-bottom:1px solid var(--color-border)}
+.purchase-table input{width:100%;padding:var(--space-1) var(--space-2);border:1px solid var(--color-border);border-radius:var(--radius-xs);font-family:inherit;font-size:1.3rem;background:#fff;outline:none}
+.purchase-table input:focus{border-color:var(--color-text-primary)}
+.btn-add-purchase{background:#fff;color:var(--color-text-secondary);border:1px solid var(--color-border);border-radius:var(--radius-xs);padding:var(--space-1) var(--space-3);cursor:pointer;font-size:1.2rem;font-family:inherit;margin-top:var(--space-2)}
+.btn-add-purchase:hover{background:#f5f5f5}
+.purchase-total-row{display:flex;justify-content:space-between;align-items:center;margin-top:var(--space-3);padding-top:var(--space-2);border-top:1px solid var(--color-border);font-size:1.3rem;font-weight:600}
+.purchase-total-row .purval{color:var(--color-danger);font-size:1.5rem}
 
-/* 급여 계산 박스 */
-.calc-box{background:#f8faff;border:1.5px solid #d0dcf5;border-radius:10px;padding:18px;margin-bottom:14px}
-.calc-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;font-size:.9rem}
-.calc-row+.calc-row{border-top:1px solid #eef0f5}
-.calc-row .lbl{color:#555}
-.calc-row .val{font-weight:600}
-.calc-row.sec{margin-top:8px;padding-top:10px;border-top:2px solid #d0dcf5!important}
-.calc-row.net{font-size:1.2rem;color:#4472C4;font-weight:700;margin-top:8px;padding-top:10px;border-top:2px solid #4472C4!important}
-.tag-s{color:#4472C4;font-size:.72rem;background:#e8f0fe;padding:1px 6px;border-radius:8px;margin-left:4px}
-.tag-p{color:#e6720a;font-size:.72rem;background:#fff0e8;padding:1px 6px;border-radius:8px;margin-left:4px}
-.tag-d{color:#c0392b;font-size:.72rem}
+/* ── 급여 계산 박스 ── */
+.calc-box{background:#f8f8f8;border:1px solid var(--color-border);border-radius:var(--radius-md);padding:var(--space-5);margin-bottom:var(--space-4)}
+.calc-row{display:flex;justify-content:space-between;align-items:center;padding:var(--space-2) 0;font-size:1.4rem}
+.calc-row+.calc-row{border-top:1px solid var(--color-border)}
+.calc-row .lbl{color:var(--color-text-secondary)}
+.calc-row .val{font-weight:600;color:var(--color-text-primary)}
+.calc-row.sec{margin-top:var(--space-2);padding-top:var(--space-3);border-top:1px solid var(--color-border-strong)!important}
+.calc-row.net{font-size:1.8rem;color:var(--color-text-primary);font-weight:700;margin-top:var(--space-2);padding-top:var(--space-3);border-top:2px solid var(--color-text-primary)!important}
+.tag-s{color:#555;font-size:1.1rem;background:#efefef;padding:1px var(--space-1);border-radius:var(--radius-pill);margin-left:var(--space-1)}
+.tag-p{color:#666;font-size:1.1rem;background:#e8e8e8;padding:1px var(--space-1);border-radius:var(--radius-pill);margin-left:var(--space-1)}
+.tag-d{color:var(--color-danger);font-size:1.1rem}
 
-/* 액션 버튼 줄 */
-.action-row{display:flex;gap:10px;margin-top:4px}
-.save-btn{flex:1;padding:12px;background:linear-gradient(135deg,#27ae60,#1e8449);color:white;border:none;border-radius:10px;font-size:.95rem;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:.15s}
-.save-btn:hover{opacity:.9}
-.save-btn:disabled{opacity:.45;cursor:not-allowed}
-.dl-btn{flex:1;padding:12px;background:linear-gradient(135deg,#4472C4,#2a4f9e);color:white;border:none;border-radius:10px;font-size:.95rem;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:.15s}
-.dl-btn:hover{opacity:.9}
-.dl-btn:disabled{opacity:.45;cursor:not-allowed}
+/* ── 액션 버튼 ── */
+.action-row{display:flex;gap:var(--space-3);margin-top:var(--space-2)}
+.save-btn{flex:1;padding:var(--space-3);background:var(--color-accent);color:#fff;border:none;border-radius:var(--radius-md);font-size:1.4rem;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:var(--space-1);transition:.15s;font-weight:500}
+.save-btn:hover{background:var(--color-accent-hover)}
+.save-btn:disabled{opacity:.4;cursor:not-allowed}
+.dl-btn{flex:1;padding:var(--space-3);background:#555;color:#fff;border:none;border-radius:var(--radius-md);font-size:1.4rem;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:var(--space-1);transition:.15s;font-weight:500}
+.dl-btn:hover{background:#777}
+.dl-btn:disabled{opacity:.4;cursor:not-allowed}
 
-/* 내역 탭 */
-.filter-row{display:flex;gap:8px;margin-bottom:14px}
-.filter-btn{padding:6px 16px;border:1.5px solid #ddd;border-radius:20px;background:white;cursor:pointer;font-size:.85rem;font-family:inherit;transition:.15s}
-.filter-btn.active{background:#4472C4;color:white;border-color:#4472C4}
-.detail-table{width:100%;border-collapse:collapse;font-size:.88rem}
-.detail-table th{background:#4472C4;color:white;padding:9px 12px;text-align:left}
-.detail-table td{padding:7px 12px;border-bottom:1px solid #f0f0f0}
-.detail-table tr:hover td{background:#f5f8ff}
-.detail-table .row-service td:first-child{border-left:3px solid #4472C4}
-.detail-table .row-product td:first-child{border-left:3px solid #e6720a}
-.cat-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:.73rem;font-weight:600}
-.cat-service{background:#e8f0fe;color:#4472C4}
-.cat-product{background:#fff0e8;color:#e6720a}
+/* ── 내역 탭 ── */
+.filter-row{display:flex;gap:var(--space-2);margin-bottom:var(--space-4);flex-wrap:wrap}
+.filter-btn{padding:var(--space-1) var(--space-4);border:1px solid var(--color-border);border-radius:var(--radius-pill);background:#fff;cursor:pointer;font-size:1.3rem;font-family:inherit;transition:.15s;color:var(--color-text-secondary)}
+.filter-btn:hover{border-color:var(--color-border-strong);color:var(--color-text-primary)}
+.filter-btn.active{background:var(--color-text-primary);color:#fff;border-color:var(--color-text-primary)}
+.detail-table{width:100%;border-collapse:collapse;font-size:1.3rem}
+.detail-table th{background:#333;color:#fff;padding:var(--space-2) var(--space-3);text-align:left;font-weight:600;font-size:1.2rem}
+.detail-table td{padding:var(--space-2) var(--space-3);border-bottom:1px solid #f0f0f0}
+.detail-table tr:hover td{background:#f8f8f8}
+.detail-table .row-service td:first-child{border-left:3px solid #555}
+.detail-table .row-product td:first-child{border-left:3px solid #888}
+.cat-badge{display:inline-block;padding:2px var(--space-2);border-radius:var(--radius-pill);font-size:1.1rem;font-weight:600}
+.cat-service{background:#efefef;color:#333}
+.cat-product{background:#e8e8e8;color:#555}
 
-/* 직원 체크박스 */
-.emp-check-item{display:flex;align-items:center;gap:5px;padding:5px 12px;border:1.5px solid #ddd;border-radius:20px;cursor:pointer;font-size:.83rem;transition:.15s;user-select:none}
-.emp-check-item:hover{border-color:#4472C4}
-.emp-check-item.checked{border-color:#4472C4;background:#eef3fc;color:#4472C4;font-weight:600}
+/* ── 직원 체크박스 ── */
+.emp-check-item{display:flex;align-items:center;gap:var(--space-1);padding:var(--space-1) var(--space-3);border:1px solid var(--color-border);border-radius:var(--radius-pill);cursor:pointer;font-size:1.3rem;transition:.15s;user-select:none;color:var(--color-text-secondary)}
+.emp-check-item:hover{border-color:var(--color-border-strong);color:var(--color-text-primary)}
+.emp-check-item.checked{border-color:var(--color-text-primary);background:#f0f0f0;color:var(--color-text-primary);font-weight:600}
 
-/* 토스트 */
-.toast{position:fixed;bottom:24px;right:24px;background:#2c3e50;color:white;padding:12px 20px;border-radius:8px;font-size:.88rem;opacity:0;transition:opacity .3s;z-index:999}
+/* ── 토스트 ── */
+.toast{position:fixed;bottom:var(--space-6);right:var(--space-6);background:#222;color:#fff;padding:var(--space-3) var(--space-5);border-radius:var(--radius-md);font-size:1.3rem;opacity:0;transition:opacity .3s;z-index:999;box-shadow:0 4px 16px rgba(0,0,0,.2)}
 .toast.show{opacity:1}
+
+/* ── KRDS 버튼 크기 체계 (L/M/S) ── */
+.btn-l{height:48px;padding:0 var(--space-6);font-size:1.5rem;border-radius:var(--radius-sm)}
+.btn-m{height:40px;padding:0 var(--space-5);font-size:1.4rem;border-radius:var(--radius-sm)}
+.btn-s{height:32px;padding:0 var(--space-3);font-size:1.3rem;border-radius:var(--radius-xs)}
+.btn-xs{height:28px;padding:0 var(--space-2);font-size:1.2rem;border-radius:var(--radius-xs)}
+
+/* ── KRDS Focus ring (모든 인터랙티브 요소) ── */
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+[tabindex]:focus-visible{
+  outline:2px solid var(--color-text-primary);
+  outline-offset:2px;
+}
+.form-group input:focus,.form-group select:focus{
+  border-color:var(--color-text-primary);
+  box-shadow:0 0 0 3px rgba(17,17,17,.1);
+  outline:none;
+}
+
+/* ── KRDS 액션 버튼 높이 통일 (M size = 40px) ── */
+.save-btn,.dl-btn{height:44px;padding:0 var(--space-5)}
+.add-btn{height:40px;padding:0 var(--space-4)}
+.btn-primary{height:40px;padding:0 var(--space-5)}
+.btn-cancel{height:40px;padding:0 var(--space-4)}
+
+/* ── KRDS Table: 숫자 우측정렬, 헤더 스타일 ── */
+.product-table td:nth-child(3),
+.product-table td:nth-child(4),
+.purchase-table td:nth-child(3),
+.detail-table td:last-child,
+.detail-table th:last-child{text-align:right}
+.detail-table th{font-weight:600;letter-spacing:.01em;font-size:1.2rem}
+.detail-table td,.detail-table th{padding:var(--space-2) var(--space-4)}
+.detail-table thead th:first-child{border-radius:var(--radius-xs) 0 0 0}
+.detail-table thead th:last-child{border-radius:0 var(--radius-xs) 0 0}
+
+/* ── KRDS Tag (필터 chip: aria-pressed 스타일) ── */
+.emp-check-item[aria-pressed="true"]{
+  border-color:var(--color-text-primary);
+  background:#f0f0f0;
+  color:var(--color-text-primary);
+  font-weight:600;
+}
+.filter-btn[aria-pressed="true"]{
+  background:var(--color-text-primary);
+  color:#fff;
+  border-color:var(--color-text-primary);
+}
+
+/* ── KRDS Select 커스텀 ── */
+.form-group select{
+  appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23555' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;
+  background-position:right 10px center;
+  padding-right:30px;
+}
+
+/* ── KRDS 직원 선택 레이블 ── */
+.section-label{font-weight:700;font-size:1.2rem;color:var(--color-text-secondary);margin-bottom:var(--space-2);text-transform:uppercase;letter-spacing:.06em}
+
+/* ── KRDS Modal 개선 ── */
+.modal-header{margin-bottom:var(--space-5);padding-bottom:var(--space-4);border-bottom:1px solid var(--color-border)}
+.modal-header h2{font-size:1.8rem;font-weight:700;color:var(--color-text-primary);margin:0}
+.modal-close{position:absolute;top:var(--space-4);right:var(--space-4);background:none;border:none;font-size:2rem;cursor:pointer;color:var(--color-text-secondary);line-height:1;padding:var(--space-1);border-radius:var(--radius-xs)}
+.modal-close:hover{background:#f5f5f5;color:var(--color-text-primary)}
+.modal{position:relative}
+
+/* ── KRDS Badge 대비 강화 ── */
+.badge-s{background:#e8e8e8;color:#111}
+.badge-p{background:#d8d8d8;color:#111}
+.cat-service{background:#e8e8e8;color:#111}
+.cat-product{background:#d0d0d0;color:#111}
+
+/* ── KRDS 카드 섹션 구분 ── */
+.card-section{margin-bottom:var(--space-6)}
+.card-section-title{font-size:1.3rem;font-weight:700;color:var(--color-text-secondary);margin-bottom:var(--space-3);padding-bottom:var(--space-2);border-bottom:1px solid var(--color-border);text-transform:uppercase;letter-spacing:.05em}
+
+/* ── 워크플로우 스텝 헤더 ── */
+.payroll-left{border-right:1px solid var(--color-border);padding-right:var(--space-5)}
+.payroll-right{min-width:0}
+.payroll-section-header{display:flex;align-items:center;gap:var(--space-2);margin-bottom:var(--space-3)}
+.step-badge{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;background:var(--color-text-primary);color:#fff;border-radius:50%;font-size:1.1rem;font-weight:700;flex-shrink:0}
+.step-title{font-size:1.5rem;font-weight:700;color:var(--color-text-primary)}
+
+/* ── 탭 공통 헤더 ── */
+.tab-header{display:flex;align-items:center;justify-content:space-between;gap:var(--space-4);margin-bottom:var(--space-5)}
+.tab-header>div{min-width:0}
+.tab-header .add-btn{flex-shrink:0}
+.tab-title{font-size:1.8rem;font-weight:700;color:var(--color-text-primary);margin-bottom:2px}
+.tab-desc{font-size:1.3rem;color:var(--color-text-secondary)}
+
+/* ── 직원 리스트 뷰 ── */
+.emp-grid{display:flex;flex-direction:column;gap:var(--space-3);margin-top:0}
+.emp-list-item{border:1px solid var(--color-border);border-radius:var(--radius-md);padding:var(--space-4) var(--space-5);background:#fff;transition:.15s}
+.emp-list-item:hover{border-color:var(--color-border-strong);box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.emp-list-top{display:flex;align-items:center;justify-content:space-between;gap:var(--space-4)}
+.emp-list-info{display:flex;align-items:center;gap:var(--space-3);min-width:0}
+.emp-avatar{width:40px;height:40px;background:#222;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.6rem;font-weight:700;flex-shrink:0}
+.emp-list-center{min-width:0}
+.emp-name{font-size:1.5rem;font-weight:700;margin-bottom:2px}
+.emp-meta{font-size:1.2rem;color:#888}
+.emp-list-right{display:flex;align-items:center;gap:var(--space-4);flex-shrink:0}
+.emp-no-records{font-size:1.2rem;color:#bbb;margin-top:var(--space-2);padding-top:var(--space-2);border-top:1px solid #f5f5f5}
+
+/* ── 필터 섹션 ── */
+.filter-section{margin-bottom:var(--space-4)}
+.filter-label{display:block;font-size:1.3rem;font-weight:700;color:var(--color-text-secondary);margin-bottom:var(--space-2)}
+.sc-note{font-size:1.1rem;color:#aaa;font-weight:400;margin-left:4px}
+
+/* ── KRDS 업로드존 아이콘 영역 개선 ── */
+.upload-zone .icon{font-size:3.2rem;margin-bottom:var(--space-3);display:block}
+.upload-zone p{font-size:1.4rem;font-weight:500;color:#444;margin-bottom:var(--space-1)}
 
 @media(max-width:720px){
   .payroll-layout{grid-template-columns:1fr}
   .summary-cards{grid-template-columns:1fr}
   .action-row{flex-direction:column}
+  header{padding:0 var(--space-4)}
+  .container{padding:var(--space-4)}
+  header nav button{padding:0 var(--space-3);font-size:1.3rem}
 }
 </style>
 </head>
 <body>
 
 <header>
-  <span>✂️</span>
-  <h1>미용실 직원 급여 관리</h1>
+  <a href="https://muamong.pages.dev/" style="display:flex;align-items:center;text-decoration:none">
+    <img class="wordmark" src="/static/logo/wordmark.png" alt="MUAMONG">
+  </a>
+  <nav role="tablist" aria-label="메인 메뉴">
+    <button role="tab" aria-selected="true" aria-controls="tab-payroll" id="nav-payroll" class="active" onclick="switchTab('payroll',this)">급여 계산</button>
+    <button role="tab" aria-selected="false" aria-controls="tab-employees" id="nav-employees" onclick="switchTab('employees',this)">직원 관리</button>
+    <button role="tab" aria-selected="false" aria-controls="tab-history" id="nav-history" onclick="switchTab('history',this)">매출 내역</button>
+  </nav>
 </header>
 
 <div class="container">
-  <div class="tabs">
-    <button class="tab-btn active" onclick="switchTab('payroll',this)">💰 급여 계산</button>
-    <button class="tab-btn" onclick="switchTab('employees',this)">👤 직원 관리</button>
-    <button class="tab-btn" onclick="switchTab('history',this)">📋 매출 내역</button>
-  </div>
+  <div class="tabs" style="display:none"></div>
 
   <!-- ── 급여 계산 ──────────────────────────────────────────────── -->
-  <div id="tab-payroll" class="tab-pane active card">
+  <div id="tab-payroll" class="tab-pane active card" role="tabpanel" aria-labelledby="nav-payroll">
     <div class="payroll-layout">
 
-      <div>
-        <div style="font-weight:700;font-size:.88rem;color:#555;margin-bottom:10px">직원 선택</div>
+      <!-- 좌: 직원 선택 -->
+      <div class="payroll-left">
+        <div class="payroll-section-header">
+          <span class="step-badge">1</span>
+          <span class="step-title">직원 선택</span>
+        </div>
         <div id="emp-selector" class="emp-selector"></div>
       </div>
 
-      <div>
+      <!-- 우: 기간·업로드·결과 -->
+      <div class="payroll-right">
+
+        <!-- Step 2: 기간 + 업로드 -->
+        <div class="payroll-section-header">
+          <span class="step-badge">2</span>
+          <span class="step-title">급여 기간 &amp; 매출 파일</span>
+        </div>
+
         <div class="period-row">
-          <label>급여 기간</label>
-          <input type="number" id="sel-year" style="width:82px" min="2020" max="2099">년
-          <select id="sel-month" style="width:75px">
+          <label for="sel-year">기간</label>
+          <input type="number" id="sel-year" style="width:88px" min="2020" max="2099">년
+          <select id="sel-month" style="width:80px">
             <option value="1">1월</option><option value="2">2월</option>
             <option value="3">3월</option><option value="4">4월</option>
             <option value="5">5월</option><option value="6">6월</option>
@@ -230,9 +435,15 @@ header h1{font-size:1.4rem}
 
         <div id="sales-summary" style="display:none">
 
+          <!-- Step 3: 결과 -->
+          <div class="payroll-section-header" style="margin-top:var(--space-4)">
+            <span class="step-badge">3</span>
+            <span class="step-title">매출 요약 &amp; 급여 계산</span>
+          </div>
+
           <div class="summary-cards">
             <div class="sum-card">
-              <div class="sc-title">💇 시술 매출</div>
+              <div class="sc-title">시술 매출</div>
               <div class="sc-total service" id="s-service-total">-</div>
               <div class="sc-sub">
                 <span class="sc-chip" id="s-scnt">-건</span>
@@ -242,7 +453,7 @@ header h1{font-size:1.4rem}
               </div>
             </div>
             <div class="sum-card">
-              <div class="sc-title">🧴 점판 매출 <span style="font-size:.72rem;color:#bbb">(아래서 수정 가능)</span></div>
+              <div class="sc-title">점판 매출 <span class="sc-note">아래서 수정 가능</span></div>
               <div class="sc-total product" id="s-product-total">-</div>
               <div class="sc-sub">
                 <span class="sc-chip" id="s-pcnt">-건</span>
@@ -255,11 +466,11 @@ header h1{font-size:1.4rem}
 
           <div class="product-edit-box">
             <div class="product-edit-title">
-              <span>🧴 점판 항목 확인 / 수정</span>
+              <span>점판 항목 확인 / 수정</span>
               <button class="btn-add-row" onclick="addProductRow()">＋ 항목 추가</button>
             </div>
             <table class="product-table">
-              <thead><tr><th>항목명</th><th>금액 (원)</th><th></th></tr></thead>
+              <thead><tr><th>항목명</th><th style="text-align:right">금액 (원)</th><th></th></tr></thead>
               <tbody id="product-tbody"></tbody>
             </table>
             <div class="product-total-row">
@@ -270,13 +481,13 @@ header h1{font-size:1.4rem}
 
           <div class="purchase-box">
             <div class="purchase-title">
-              <span>📌 차감 항목 <span style="font-size:.72rem;font-weight:400;color:#e88">(급여합계에서 먼저 차감 후 세금 계산)</span></span>
+              <span>차감 항목 <span class="sc-note">급여합계에서 먼저 차감 후 세금 계산</span></span>
               <button class="btn-add-purchase" onclick="addPurchaseRow()">＋ 항목 추가</button>
             </div>
             <table class="purchase-table">
-              <thead><tr><th>항목명</th><th>금액 (원)</th><th></th></tr></thead>
+              <thead><tr><th>항목명</th><th style="text-align:right">금액 (원)</th><th></th></tr></thead>
               <tbody id="purchase-tbody">
-                <tr><td colspan="3" style="color:#bbb;text-align:center;padding:10px">차감 항목 없음 — 추가 버튼으로 입력</td></tr>
+                <tr><td colspan="3" style="color:#bbb;text-align:center;padding:12px 0">차감 항목 없음 — 추가 버튼으로 입력</td></tr>
               </tbody>
             </table>
             <div class="purchase-total-row">
@@ -290,8 +501,8 @@ header h1{font-size:1.4rem}
           </div>
 
           <div class="action-row">
-            <button class="save-btn" id="save-btn" onclick="saveSalary()" disabled>💾 저장 (월별 기록)</button>
-            <button class="dl-btn"  id="dl-btn"   onclick="printPayslip()"  disabled>🖨️ 명세서 인쇄/PDF</button>
+            <button class="save-btn" id="save-btn" onclick="saveSalary()" disabled>저장 (월별 기록)</button>
+            <button class="dl-btn"  id="dl-btn"   onclick="printPayslip()"  disabled>명세서 인쇄 / PDF</button>
           </div>
 
         </div>
@@ -300,24 +511,31 @@ header h1{font-size:1.4rem}
   </div>
 
   <!-- ── 직원 관리 ──────────────────────────────────────────────── -->
-  <div id="tab-employees" class="tab-pane card">
-    <h2 style="font-size:1.05rem;margin-bottom:4px">직원 목록</h2>
-    <p style="color:#aaa;font-size:.82rem;margin-bottom:14px">시술·점판 수수료율 설정 및 월별 급여 이력 확인</p>
+  <div id="tab-employees" class="tab-pane card" role="tabpanel" aria-labelledby="nav-employees">
+    <div class="tab-header">
+      <div>
+        <h2 class="tab-title">직원 목록</h2>
+        <p class="tab-desc">수수료율 설정 및 월별 급여 이력 확인</p>
+      </div>
+      <button class="add-btn" onclick="openModal()">＋ 직원 추가</button>
+    </div>
     <div id="emp-grid" class="emp-grid"></div>
-    <button class="add-btn" onclick="openModal()">＋ 직원 추가</button>
   </div>
 
   <!-- ── 매출 내역 ──────────────────────────────────────────────── -->
-  <div id="tab-history" class="tab-pane card">
-    <h2 style="font-size:1.05rem;margin-bottom:12px">📋 월별 급여 기록</h2>
-    <div style="margin-bottom:12px">
-      <div style="font-size:.83rem;font-weight:600;color:#555;margin-bottom:7px">
-        직원 선택 <span style="font-size:.75rem;color:#aaa;font-weight:400">(복수 선택 가능)</span>
+  <div id="tab-history" class="tab-pane card" role="tabpanel" aria-labelledby="nav-history">
+    <div class="tab-header">
+      <div>
+        <h2 class="tab-title">월별 급여 기록</h2>
+        <p class="tab-desc">직원별 저장된 급여 내역을 조회합니다</p>
       </div>
-      <div id="history-emp-checkboxes" style="display:flex;flex-wrap:wrap;gap:8px"></div>
+    </div>
+    <div class="filter-section">
+      <span class="filter-label">직원 선택 <span class="sc-note">복수 선택 가능</span></span>
+      <div id="history-emp-checkboxes" class="filter-row"></div>
     </div>
     <div id="detail-area">
-      <p style="color:#aaa;text-align:center;padding:30px">직원을 선택하면 저장된 월별 기록이 표시됩니다</p>
+      <p style="color:#aaa;text-align:center;padding:40px 0">직원을 선택하면 저장된 월별 기록이 표시됩니다</p>
     </div>
   </div>
 </div>
@@ -528,21 +746,30 @@ async function renderEmpGrid() {
       </div>`;
     }).join('');
 
-    return `<div class="emp-card">
-      <div class="emp-name">${e.name}</div>
-      <div class="emp-meta">${e.salon||''} · ${e.role||''}</div>
-      <div class="rate-badges">
-        <span class="badge badge-s">시술 ${e.commission_rate}%</span>
-        <span class="badge badge-p">점판 ${e.product_commission_rate||50}%</span>
-      </div>
-      <div class="emp-actions">
-        <button class="btn-sm btn-edit" onclick="openModal('${e.id}')">수정</button>
-        <button class="btn-sm btn-del"  onclick="deleteEmployee('${e.id}')">삭제</button>
+    return `<div class="emp-list-item">
+      <div class="emp-list-top">
+        <div class="emp-list-info">
+          <div class="emp-avatar">${e.name[0]}</div>
+          <div class="emp-list-center">
+            <div class="emp-name">${e.name}</div>
+            <div class="emp-meta">${[e.salon, e.role].filter(Boolean).join(' · ')}</div>
+          </div>
+        </div>
+        <div class="emp-list-right">
+          <div class="rate-badges">
+            <span class="badge badge-s">시술 ${e.commission_rate}%</span>
+            <span class="badge badge-p">점판 ${e.product_commission_rate||50}%</span>
+          </div>
+          <div class="emp-actions">
+            <button class="btn-sm btn-edit" onclick="openModal('${e.id}')">수정</button>
+            <button class="btn-sm btn-del"  onclick="deleteEmployee('${e.id}')">삭제</button>
+          </div>
+        </div>
       </div>
       ${keys.length ? `<div class="salary-mini">
-        <div class="salary-mini-title">📅 월별 급여 기록 (${keys.length}건)</div>
+        <div class="salary-mini-title">월별 급여 기록 <span style="font-weight:400;color:#aaa">(${keys.length}건)</span></div>
         <div class="salary-mini-rows">${miniRows}</div>
-      </div>` : '<div style="font-size:.75rem;color:#bbb;margin-top:8px">저장된 급여 기록 없음</div>'}
+      </div>` : '<div class="emp-no-records">저장된 급여 기록 없음</div>'}
     </div>`;
   }).join('');
 }
@@ -587,9 +814,13 @@ function selectEmp(id) {
 
 function switchTab(name, btn) {
   document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('header nav button, .tab-btn').forEach(b => {
+    b.classList.remove('active');
+    b.setAttribute('aria-selected','false');
+  });
   document.getElementById('tab-' + name).classList.add('active');
   btn.classList.add('active');
+  btn.setAttribute('aria-selected','true');
   if (name === 'employees') renderEmpGrid();
   if (name === 'history')   renderHistoryEmpCheckboxes();
 }
@@ -1251,5 +1482,20 @@ document.getElementById('modal-overlay').addEventListener('click', e => {
 
 loadEmployees();
 </script>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <img class="footer-logo" src="/static/logo/footer w.png" alt="무아몽헤어">
+    <div class="footer-right">
+      <div class="footer-family">
+        <span class="family-label">Related Services</span>
+        <span class="family-sep">|</span>
+        <a class="family-link" href="https://naverv.pages.dev/" target="_blank" rel="noopener">네이버 순위체커</a>
+      </div>
+      <span class="copyright">© 2026 Muamong Hair. All Rights Reserved.</span>
+    </div>
+  </div>
+</footer>
+
 </body>
 </html>
