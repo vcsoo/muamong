@@ -64,15 +64,34 @@ footer.site-footer img.footer-logo{height:40px;width:auto}
 .family-sep{color:#444;font-size:1.1rem}
 footer.site-footer .copyright{font-size:1.1rem;color:#555;line-height:1}
 
-/* ── 콘텐츠 영역 고정 ── */
+/* ── 콘텐츠 영역 ── */
 .card{min-height:520px}
-.payroll-left{min-height:440px}
-.payroll-right{height:520px;overflow-y:auto;padding-right:var(--space-1)}
-.payroll-right::-webkit-scrollbar{width:4px}
-.payroll-right::-webkit-scrollbar-track{background:transparent}
-.payroll-right::-webkit-scrollbar-thumb{background:#ddd;border-radius:2px}
-#tab-employees .emp-grid{min-height:360px}
-#tab-history #detail-area{min-height:360px}
+.payroll-left{min-height:400px}
+.payroll-right{min-height:400px}
+
+/* ── Master-Detail 레이아웃 ── */
+.master-detail-layout{display:grid;grid-template-columns:200px 1fr;min-height:460px}
+.master-panel{border-right:1px solid var(--color-border);padding-right:var(--space-4);display:flex;flex-direction:column}
+.master-panel-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-3);padding-bottom:var(--space-3);border-bottom:1px solid var(--color-border);flex-shrink:0}
+.panel-title{font-size:1.3rem;font-weight:700;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.04em}
+.master-list{display:flex;flex-direction:column;gap:2px;overflow-y:auto}
+.master-item{display:flex;align-items:center;gap:var(--space-2);padding:var(--space-2) var(--space-3);border-radius:var(--radius-sm);cursor:pointer;transition:.15s;border:1px solid transparent}
+.master-item:hover{background:#f8f8f8}
+.master-item.active{background:#f0f0f0;border-color:var(--color-border);font-weight:700}
+.master-avatar-sm{width:32px;height:32px;background:#333;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.3rem;font-weight:700;flex-shrink:0}
+.master-item.active .master-avatar-sm{background:#111}
+.master-item-name{font-size:1.3rem;font-weight:600;color:var(--color-text-primary)}
+.master-item-sub{font-size:1.1rem;color:#aaa}
+.detail-panel{padding-left:var(--space-5);min-width:0}
+.detail-empty{color:#bbb;text-align:center;padding:60px 0;font-size:1.3rem}
+
+/* ── 직원 상세 패널 ── */
+.emp-detail-header{display:flex;align-items:center;gap:var(--space-4);margin-bottom:var(--space-5);padding-bottom:var(--space-4);border-bottom:1px solid var(--color-border)}
+.emp-detail-avatar{width:56px;height:56px;background:#111;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:2.4rem;font-weight:700;flex-shrink:0}
+.emp-detail-name{font-size:2rem;font-weight:700;margin-bottom:4px}
+.emp-detail-meta{font-size:1.3rem;color:#888}
+.emp-detail-actions{margin-left:auto;display:flex;gap:var(--space-2)}
+.emp-records-title{font-size:1.3rem;font-weight:700;color:var(--color-text-secondary);margin-bottom:var(--space-3);text-transform:uppercase;letter-spacing:.04em}
 
 /* ── Layout ── */
 .container{max-width:1280px;margin:0 auto;padding:var(--space-6) var(--space-6);flex:1}
@@ -377,7 +396,6 @@ select:focus-visible,
   <nav role="tablist" aria-label="메인 메뉴">
     <button role="tab" aria-selected="true" aria-controls="tab-payroll" id="nav-payroll" class="active" onclick="switchTab('payroll',this)">급여 계산</button>
     <button role="tab" aria-selected="false" aria-controls="tab-employees" id="nav-employees" onclick="switchTab('employees',this)">직원 관리</button>
-    <button role="tab" aria-selected="false" aria-controls="tab-history" id="nav-history" onclick="switchTab('history',this)">매출 내역</button>
   </nav>
 </header>
 
@@ -512,32 +530,22 @@ select:focus-visible,
 
   <!-- ── 직원 관리 ──────────────────────────────────────────────── -->
   <div id="tab-employees" class="tab-pane card" role="tabpanel" aria-labelledby="nav-employees">
-    <div class="tab-header">
-      <div>
-        <h2 class="tab-title">직원 목록</h2>
-        <p class="tab-desc">수수료율 설정 및 월별 급여 이력 확인</p>
+    <div class="master-detail-layout">
+      <div class="master-panel">
+        <div class="master-panel-header">
+          <span class="panel-title">직원</span>
+          <button class="btn-sm btn-edit" onclick="openModal()" style="padding:4px 10px;font-size:1.2rem">＋ 추가</button>
+        </div>
+        <div id="emp-master-list" class="master-list"></div>
       </div>
-      <button class="add-btn" onclick="openModal()">＋ 직원 추가</button>
+      <div class="detail-panel">
+        <div id="emp-detail-panel">
+          <div class="detail-empty">← 직원을 선택하세요</div>
+        </div>
+      </div>
     </div>
-    <div id="emp-grid" class="emp-grid"></div>
   </div>
 
-  <!-- ── 매출 내역 ──────────────────────────────────────────────── -->
-  <div id="tab-history" class="tab-pane card" role="tabpanel" aria-labelledby="nav-history">
-    <div class="tab-header">
-      <div>
-        <h2 class="tab-title">월별 급여 기록</h2>
-        <p class="tab-desc">직원별 저장된 급여 내역을 조회합니다</p>
-      </div>
-    </div>
-    <div class="filter-section">
-      <span class="filter-label">직원 선택 <span class="sc-note">복수 선택 가능</span></span>
-      <div id="history-emp-checkboxes" class="filter-row"></div>
-    </div>
-    <div id="detail-area">
-      <p style="color:#aaa;text-align:center;padding:40px 0">직원을 선택하면 저장된 월별 기록이 표시됩니다</p>
-    </div>
-  </div>
 </div>
 
 <!-- 직원 모달 -->
@@ -722,56 +730,91 @@ async function loadEmployees() {
   renderEmpSelector();
 }
 
+let selectedDetailEmpId = null;
+
 async function renderEmpGrid() {
-  const g = document.getElementById('emp-grid');
+  renderEmpMaster();
+  if (selectedDetailEmpId) renderEmpDetailPanel(selectedDetailEmpId);
+}
+
+function renderEmpMaster() {
+  const list = document.getElementById('emp-master-list');
+  if (!list) return;
   if (!employees.length) {
-    g.innerHTML = '<p style="color:#aaa;padding:20px">등록된 직원이 없습니다</p>'; return;
+    list.innerHTML = '<p style="color:#bbb;font-size:1.2rem;padding:var(--space-3)">등록된 직원 없음</p>';
+    return;
   }
-  const recordsArr = await Promise.all(employees.map(e =>
-    fetch(`/salary/${e.id}`).then(r => r.json())));
+  list.innerHTML = employees.map(e => `
+    <div class="master-item ${selectedDetailEmpId === e.id ? 'active' : ''}"
+         onclick="selectEmpDetail('${e.id}')">
+      <div class="master-avatar-sm">${e.name[0]}</div>
+      <div>
+        <div class="master-item-name">${e.name}</div>
+        <div class="master-item-sub">${e.role || ''}</div>
+      </div>
+    </div>`).join('');
+}
 
-  g.innerHTML = employees.map((e, idx) => {
-    const recs = recordsArr[idx];
-    const keys = Object.keys(recs).sort().reverse();
-    const miniRows = keys.slice(0, 6).map(k => {
-      const rec = recs[k];
-      return `<div class="salary-row">
-        <span class="sr-period">${rec.year}년 ${rec.month}월</span>
-        <span class="sr-total">매출 ${fmt(rec.service_total + rec.product_total)}</span>
-        <span class="sr-net">${fmt(rec.payroll.net)}원</span>
-        <span class="sr-btns">
-          <span class="sedit" onclick="loadSavedRecord('${e.id}','${rec.year}','${rec.month}')" title="수정">✏️</span>
-          <span class="sdel"  onclick="deleteSalary('${e.id}','${rec.year}','${rec.month}')"    title="삭제">✕</span>
-        </span>
-      </div>`;
-    }).join('');
+async function selectEmpDetail(empId) {
+  selectedDetailEmpId = empId;
+  renderEmpMaster();
+  await renderEmpDetailPanel(empId);
+}
 
-    return `<div class="emp-list-item">
-      <div class="emp-list-top">
-        <div class="emp-list-info">
-          <div class="emp-avatar">${e.name[0]}</div>
-          <div class="emp-list-center">
-            <div class="emp-name">${e.name}</div>
-            <div class="emp-meta">${[e.salon, e.role].filter(Boolean).join(' · ')}</div>
-          </div>
-        </div>
-        <div class="emp-list-right">
-          <div class="rate-badges">
-            <span class="badge badge-s">시술 ${e.commission_rate}%</span>
-            <span class="badge badge-p">점판 ${e.product_commission_rate||50}%</span>
-          </div>
-          <div class="emp-actions">
-            <button class="btn-sm btn-edit" onclick="openModal('${e.id}')">수정</button>
-            <button class="btn-sm btn-del"  onclick="deleteEmployee('${e.id}')">삭제</button>
-          </div>
+async function renderEmpDetailPanel(empId) {
+  const panel = document.getElementById('emp-detail-panel');
+  if (!panel) return;
+  const e = employees.find(x => x.id === empId);
+  if (!e) return;
+  const recs = await fetch(`/salary/${e.id}`).then(r => r.json());
+  const keys = Object.keys(recs).sort().reverse();
+
+  const tableRows = keys.map(k => {
+    const rec = recs[k];
+    return `<tr>
+      <td>${rec.year}년 ${rec.month}월</td>
+      <td style="text-align:right">${fmt(rec.service_total)}</td>
+      <td style="text-align:right">${rec.product_total ? fmt(rec.product_total) : '-'}</td>
+      <td style="text-align:right;color:var(--color-danger)">${rec.purchase_total ? '-'+fmt(rec.purchase_total) : '-'}</td>
+      <td style="text-align:right;color:var(--color-danger)">-${fmt(rec.payroll?.deduction||0)}</td>
+      <td style="text-align:right;font-weight:700">${fmt(rec.payroll?.net||0)}원</td>
+      <td style="text-align:center">
+        <span class="sedit" onclick="loadSavedRecord('${e.id}','${rec.year}','${rec.month}')" title="급여 계산에서 불러오기">✏️</span>
+        <span class="sdel"  onclick="deleteSalary('${e.id}','${rec.year}','${rec.month}')"    title="삭제">✕</span>
+      </td>
+    </tr>`;
+  }).join('');
+
+  panel.innerHTML = `
+    <div class="emp-detail-header">
+      <div class="emp-detail-avatar">${e.name[0]}</div>
+      <div>
+        <div class="emp-detail-name">${e.name}</div>
+        <div class="emp-detail-meta">${[e.salon, e.role].filter(Boolean).join(' · ')}</div>
+        <div class="rate-badges" style="margin-top:var(--space-1)">
+          <span class="badge badge-s">시술 ${e.commission_rate}%</span>
+          <span class="badge badge-p">점판 ${e.product_commission_rate||50}%</span>
         </div>
       </div>
-      ${keys.length ? `<div class="salary-mini">
-        <div class="salary-mini-title">월별 급여 기록 <span style="font-weight:400;color:#aaa">(${keys.length}건)</span></div>
-        <div class="salary-mini-rows">${miniRows}</div>
-      </div>` : '<div class="emp-no-records">저장된 급여 기록 없음</div>'}
-    </div>`;
-  }).join('');
+      <div class="emp-detail-actions">
+        <button class="btn-sm btn-edit" onclick="openModal('${e.id}')">정보 수정</button>
+        <button class="btn-sm btn-del"  onclick="deleteEmployee('${e.id}')">삭제</button>
+      </div>
+    </div>
+    <div class="emp-records-title">월별 급여 기록 <span style="font-weight:400;color:#bbb">(${keys.length}건)</span></div>
+    ${keys.length ? `<table class="detail-table">
+      <thead><tr>
+        <th>기간</th>
+        <th style="text-align:right">시술매출</th>
+        <th style="text-align:right">점판매출</th>
+        <th style="text-align:right">차감항목</th>
+        <th style="text-align:right">세금공제</th>
+        <th style="text-align:right">실입금</th>
+        <th style="text-align:center">작업</th>
+      </tr></thead>
+      <tbody>${tableRows}</tbody>
+    </table>`
+    : '<p style="color:#bbb;padding:var(--space-4) 0">저장된 급여 기록이 없습니다</p>'}`;
 }
 
 function renderEmpSelector() {
@@ -822,7 +865,6 @@ function switchTab(name, btn) {
   btn.classList.add('active');
   btn.setAttribute('aria-selected','true');
   if (name === 'employees') renderEmpGrid();
-  if (name === 'history')   renderHistoryEmpCheckboxes();
 }
 
 // ── 파일 업로드 (브라우저 파싱) ──────────────────────────────────────────────
@@ -1323,71 +1365,92 @@ document.getElementById('sel-month').addEventListener('change', checkSavedRecord
 let historyChecked = new Set();
 let historyAllData = {};
 
+let selectedHistoryEmpId = null;
+
 async function renderHistoryEmpCheckboxes() {
-  const box = document.getElementById('history-emp-checkboxes');
-  if (!employees.length) { box.innerHTML = '<span style="color:#aaa;font-size:.82rem">직원 없음</span>'; return; }
-  box.innerHTML = employees.map(e => `
-    <div class="emp-check-item ${historyChecked.has(e.id) ? 'checked' : ''}"
-         onclick="toggleHistoryEmp('${e.id}', this)">
-      ${historyChecked.has(e.id) ? '✓ ' : ''}${e.name}
+  const list = document.getElementById('history-master-list');
+  if (!list) return;
+  if (!employees.length) {
+    list.innerHTML = '<p style="color:#bbb;font-size:1.2rem;padding:var(--space-3)">직원 없음</p>';
+    return;
+  }
+  list.innerHTML = employees.map(e => `
+    <div class="master-item ${selectedHistoryEmpId === e.id ? 'active' : ''}"
+         onclick="selectHistoryEmp('${e.id}')">
+      <div class="master-avatar-sm">${e.name[0]}</div>
+      <div>
+        <div class="master-item-name">${e.name}</div>
+        <div class="master-item-sub">${e.role || ''}</div>
+      </div>
     </div>`).join('');
 }
 
-async function toggleHistoryEmp(id, el) {
-  if (historyChecked.has(id)) {
-    historyChecked.delete(id);
-    el.classList.remove('checked');
-    el.textContent = el.textContent.replace('✓ ', '');
-  } else {
-    historyChecked.add(id);
-    el.classList.add('checked');
-    el.textContent = '✓ ' + el.textContent;
-    if (!historyAllData[id]) {
-      const r = await fetch(`/salary/${id}`);
-      historyAllData[id] = await r.json();
-    }
+async function selectHistoryEmp(id) {
+  selectedHistoryEmpId = id;
+  renderHistoryEmpCheckboxes();
+  if (!historyAllData[id]) {
+    const r = await fetch(`/salary/${id}`);
+    historyAllData[id] = await r.json();
   }
   renderHistoryCombined();
 }
 
 function renderHistoryCombined() {
   const area = document.getElementById('detail-area');
-  if (!historyChecked.size) {
-    area.innerHTML = '<p style="color:#aaa;text-align:center;padding:30px">직원을 선택하면 저장된 월별 기록이 표시됩니다</p>';
+  if (!selectedHistoryEmpId) {
+    area.innerHTML = '<div class="detail-empty">← 직원을 선택하세요</div>';
     return;
   }
-  let rows = '';
-  for (const empId of historyChecked) {
-    const emp  = employees.find(e => e.id === empId);
-    const recs = historyAllData[empId] || {};
-    const keys = Object.keys(recs).sort().reverse();
-    if (!keys.length) {
-      rows += `<tr><td colspan="7" style="background:#f8f9fa;padding:8px 12px;color:#aaa">${emp?.name || empId} — 저장된 기록 없음</td></tr>`;
-      continue;
-    }
-    rows += `<tr><td colspan="7" style="background:#eef3fc;font-weight:700;padding:7px 12px;color:#4472C4">${emp?.name || empId}</td></tr>`;
-    keys.forEach(k => {
-      const rec = recs[k];
-      rows += `<tr>
-        <td>${rec.year}년 ${rec.month}월</td>
-        <td style="text-align:right">${fmt(rec.service_total)}</td>
-        <td style="text-align:right">${rec.product_total ? fmt(rec.product_total) : '-'}</td>
-        <td style="text-align:right;color:#c0392b">${rec.purchase_total ? '-' + fmt(rec.purchase_total) : '-'}</td>
-        <td style="text-align:right;color:#c0392b">-${fmt(rec.payroll?.deduction || 0)}</td>
-        <td style="text-align:right;font-weight:700;color:#4472C4">${fmt(rec.payroll?.net || 0)}원</td>
-        <td style="text-align:center">
-          <span style="cursor:pointer;color:#4472C4;font-size:.8rem"
-                onclick="loadSavedRecord('${empId}','${rec.year}','${rec.month}')">✏️</span>
-        </td></tr>`;
-    });
+  const emp  = employees.find(e => e.id === selectedHistoryEmpId);
+  const recs = historyAllData[selectedHistoryEmpId] || {};
+  const keys = Object.keys(recs).sort().reverse();
+
+  if (!keys.length) {
+    area.innerHTML = `<div class="emp-detail-header">
+      <div class="emp-detail-avatar">${emp?.name[0]||'?'}</div>
+      <div><div class="emp-detail-name">${emp?.name||''}</div>
+      <div class="emp-detail-meta">${emp?.role||''}</div></div>
+    </div>
+    <p style="color:#bbb;padding:var(--space-4) 0">저장된 급여 기록이 없습니다</p>`;
+    return;
   }
-  area.innerHTML = `<table class="detail-table">
-    <thead><tr>
-      <th>기간</th><th style="text-align:right">시술매출</th><th style="text-align:right">점판매출</th>
-      <th style="text-align:right">차감항목</th><th style="text-align:right">세금공제</th>
-      <th style="text-align:right">실입금액</th><th style="text-align:center">수정</th>
-    </tr></thead>
-    <tbody>${rows}</tbody></table>`;
+
+  const rows = keys.map(k => {
+    const rec = recs[k];
+    return `<tr>
+      <td>${rec.year}년 ${rec.month}월</td>
+      <td style="text-align:right">${fmt(rec.service_total)}</td>
+      <td style="text-align:right">${rec.product_total ? fmt(rec.product_total) : '-'}</td>
+      <td style="text-align:right;color:var(--color-danger)">${rec.purchase_total ? '-'+fmt(rec.purchase_total) : '-'}</td>
+      <td style="text-align:right;color:var(--color-danger)">-${fmt(rec.payroll?.deduction||0)}</td>
+      <td style="text-align:right;font-weight:700">${fmt(rec.payroll?.net||0)}원</td>
+      <td style="text-align:center">
+        <span class="sedit" onclick="loadSavedRecord('${selectedHistoryEmpId}','${rec.year}','${rec.month}')" title="급여 계산에서 수정">✏️</span>
+      </td>
+    </tr>`;
+  }).join('');
+
+  area.innerHTML = `
+    <div class="emp-detail-header">
+      <div class="emp-detail-avatar">${emp?.name[0]||'?'}</div>
+      <div>
+        <div class="emp-detail-name">${emp?.name||''}</div>
+        <div class="emp-detail-meta">${[emp?.salon, emp?.role].filter(Boolean).join(' · ')}</div>
+      </div>
+    </div>
+    <div class="emp-records-title">월별 급여 기록 <span style="font-weight:400;color:#bbb">(${keys.length}건)</span></div>
+    <table class="detail-table">
+      <thead><tr>
+        <th>기간</th>
+        <th style="text-align:right">시술매출</th>
+        <th style="text-align:right">점판매출</th>
+        <th style="text-align:right">차감항목</th>
+        <th style="text-align:right">세금공제</th>
+        <th style="text-align:right">실입금</th>
+        <th style="text-align:center">수정</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
 }
 
 function renderDetailTable(details) {
