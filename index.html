@@ -375,7 +375,13 @@ document.getElementById('sel-month').value = now.getMonth() + 1;
 
 // ── XLS 파싱 (브라우저 내 SheetJS) ─────────────────────────────────────────
 function parseSalesXls(arrayBuffer, filename) {
-  const wb = XLSX.read(new Uint8Array(arrayBuffer), { type: 'array', codepage: 51949 });
+  let wb;
+  try {
+    const str = new TextDecoder('euc-kr').decode(arrayBuffer);
+    wb = XLSX.read(str, { type: 'string' });
+  } catch(e) {
+    wb = XLSX.read(new Uint8Array(arrayBuffer), { type: 'array' });
+  }
   const ws = wb.Sheets[wb.SheetNames[0]];
   const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
 
