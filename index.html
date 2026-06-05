@@ -871,12 +871,6 @@ function printPayslip() {
 
   const f = n => (n || 0).toLocaleString('ko-KR');
 
-  const purRows = purItems.map(i =>
-    `<tr><td>${i.name}</td><td class="r red">- ${f(i.amount)}원</td></tr>`).join('');
-  const pNote = pTotal > 0
-    ? `<p class="note">※ 점판: ${f(pTotal)} − 부가세(${f(Math.floor(pTotal*0.1))}) − 원가(${f(Math.floor(pTotal*0.5))}) = ${f(pProfit)} × ${pRate}% = ${f(pGross)}원</p>`
-    : '';
-
   const BASE = location.origin;
   const pNote = pTotal > 0
     ? `<p class="note">※ 점판 : ${f(pTotal)} &nbsp;부가세(${f(Math.floor(pTotal*0.1))}) &nbsp;원가(${f(Math.floor(pTotal*0.5))}) = ${f(pProfit)} × ${pRate}% = ${f(pGross)}원</p>`
