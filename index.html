@@ -418,10 +418,20 @@ function parseSalesXls(arrayBuffer, filename) {
   if (rows.length < 2) throw new Error('데이터 행이 없습니다');
 
   const stem = filename.replace(/\.[^.]+$/, '');
-  const m = stem.match(/^(.+?)_(\d{1,2})월$/);
-  const empName = m ? m[1] : null;
-  const month   = m ? parseInt(m[2]) : 0;
-  const year    = new Date().getFullYear();
+  let empName = null, month = 0, year = new Date().getFullYear();
+
+  // 패턴1: 이름_N월.xls
+  const m1 = stem.match(/^(.+?)_(\d{1,2})월$/);
+  if (m1) { empName = m1[1]; month = parseInt(m1[2]); }
+
+  // 패턴2: 담당자별매출상세조회_YYYY-MM-DD.xls (실제 POS 파일명)
+  const m2 = stem.match(/(\d{4})-(\d{2})-(\d{2})$/);
+  if (m2) { year = parseInt(m2[1]); month = parseInt(m2[2]); }
+
+  // 파일명에서 직원명을 못 읽은 경우 → 테이블 데이터 col[0]에서 추출
+  if (!empName && rows[1] && rows[1][0]) {
+    empName = rows[1][0].trim();
+  }
 
   function toInt(val) {
     const s = String(val || '').replace(/,/g, '').trim();
@@ -602,7 +612,11 @@ async function uploadFile(file) {
 
     let detected = [];
     if (data.emp_name) {
-      const matched = employees.find(e => e.name === data.emp_name);
+      const matched = employees.find(e =>
+        e.name === data.emp_name ||
+        e.name.includes(data.emp_name) ||
+        data.emp_name.includes(e.name)
+      );
       if (matched) { selectedEmpId = matched.id; renderEmpSelector(); detected.push('직원: ' + data.emp_name); }
     }
     if (data.month > 0) {
