@@ -393,16 +393,19 @@ select:focus-visible,
 .upload-zone p{font-size:1.4rem;font-weight:500;color:#444;margin-bottom:var(--space-1)}
 
 /* ── 대시보드 ── */
-.dash-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--space-4);margin-bottom:var(--space-6)}
-.dash-card{background:#f8f8f8;border:1px solid var(--color-border);border-radius:var(--radius-md);padding:var(--space-4) var(--space-5)}
-.dash-card .dc-label{font-size:1.1rem;font-weight:700;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.04em;margin-bottom:var(--space-2)}
-.dash-card .dc-value{font-size:2.4rem;font-weight:700;color:var(--color-text-primary);line-height:1}
-.dash-card .dc-sub{font-size:1.2rem;color:var(--color-text-secondary);margin-top:var(--space-1)}
+.dash-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--space-4);margin-bottom:var(--space-5)}
+.dash-card{background:#fff;border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:var(--space-5) var(--space-6);position:relative;overflow:hidden}
+.dash-card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,#f8f8f8 0%,#fff 60%);z-index:0}
+.dash-card>*{position:relative;z-index:1}
+.dash-card .dc-label{font-size:1.05rem;font-weight:700;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.06em;margin-bottom:var(--space-3)}
+.dash-card .dc-value{font-size:2.6rem;font-weight:700;color:var(--color-text-primary);line-height:1;margin-bottom:var(--space-1)}
+.dash-card .dc-sub{font-size:1.15rem;color:var(--color-text-secondary)}
 .dc-up{color:#27ae60}.dc-down{color:var(--color-danger)}.dc-same{color:#888}
-.dash-charts{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-5);margin-bottom:var(--space-5)}
-.dash-chart-box{background:#fff;border:1px solid var(--color-border);border-radius:var(--radius-md);padding:var(--space-5)}
+.dash-charts{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-4);margin-bottom:var(--space-4)}
+.dash-chart-box{background:#fff;border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:var(--space-5) var(--space-6)}
 .dash-chart-box.full{grid-column:1/-1}
-.dash-chart-title{font-size:1.3rem;font-weight:700;color:var(--color-text-primary);margin-bottom:var(--space-4)}
+.dash-chart-title{font-size:1.3rem;font-weight:700;color:var(--color-text-primary);margin-bottom:2px}
+.dash-chart-sub{font-size:1.1rem;color:var(--color-text-secondary);margin-bottom:var(--space-4)}
 .dash-empty{color:#bbb;text-align:center;padding:var(--space-8) 0;font-size:1.3rem}
 .dash-loading{color:#bbb;text-align:center;padding:var(--space-8) 0;font-size:1.3rem}
 
@@ -1834,7 +1837,16 @@ document.getElementById('modal-overlay').addEventListener('click', e => {
 });
 
 // ── 대시보드 ─────────────────────────────────────────────────────────────────
-const DASH_COLORS = ['#111','#4472C4','#70AD47','#ED7D31','#5B9BD5','#FFC000','#A5A5A5','#264478'];
+// Chart.js 전역 기본값
+Chart.defaults.font.family = "'Noto Sans KR','Malgun Gothic',sans-serif";
+Chart.defaults.font.size   = 11;
+Chart.defaults.color       = '#888';
+Chart.defaults.plugins.tooltip.callbacks = {};
+
+const DASH_COLORS      = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#f97316','#6366f1'];
+const DASH_COLORS_BG   = ['rgba(59,130,246,.12)','rgba(16,185,129,.12)','rgba(245,158,11,.12)',
+                           'rgba(239,68,68,.12)','rgba(139,92,246,.12)','rgba(6,182,212,.12)',
+                           'rgba(249,115,22,.12)','rgba(99,102,241,.12)'];
 
 let dashCharts = {};
 let dashSummaryData = null;
@@ -1844,6 +1856,20 @@ let dashSelectedEmps = null; // Set<emp_id>
 function destroyCharts() {
   Object.values(dashCharts).forEach(c => c.destroy());
   dashCharts = {};
+}
+
+// rgba 변환 헬퍼
+function hexAlpha(hex, a) {
+  const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${a})`;
+}
+
+// 그라디언트 생성
+function makeGradient(ctx, color, h = 300) {
+  const g = ctx.createLinearGradient(0, 0, 0, h);
+  g.addColorStop(0, hexAlpha(color, 0.25));
+  g.addColorStop(1, hexAlpha(color, 0.02));
+  return g;
 }
 
 async function loadDashboard() {
@@ -1874,50 +1900,92 @@ async function loadDashboard() {
 
 function renderDashboard() {
   destroyCharts();
-  const summary = dashSummaryData;
-  const empMap  = dashEmpMap;
+  const summary  = dashSummaryData;
+  const empMap   = dashEmpMap;
   const selected = dashSelectedEmps;
-  const f = n => (n||0).toLocaleString('ko-KR');
+  const f  = n => (n||0).toLocaleString('ko-KR');
+  const fm = n => Math.round((n||0)/10000) + '만';
 
-  const now = new Date();
-  const thisYear  = now.getFullYear();
-  const thisMonth = now.getMonth() + 1;
-  const prevYear  = thisMonth === 1 ? thisYear - 1 : thisYear;
-  const prevMonth = thisMonth === 1 ? 12 : thisMonth - 1;
+  // ── 최근 정산월 기준 (new Date() 아님) ────────────────────────
+  let latestYear = 0, latestMonth = 0;
+  for (const r of summary) {
+    if (r.year > latestYear || (r.year === latestYear && r.month > latestMonth)) {
+      latestYear = r.year; latestMonth = r.month;
+    }
+  }
+  const prevYear  = latestMonth === 1 ? latestYear - 1 : latestYear;
+  const prevMonth = latestMonth === 1 ? 12 : latestMonth - 1;
 
-  const sel = summary.filter(r => selected.has(r.emp_id));
-  const thisTotal = sel.filter(r => r.year===thisYear && r.month===thisMonth).reduce((s,r)=>s+r.net,0);
-  const prevTotal = sel.filter(r => r.year===prevYear && r.month===prevMonth).reduce((s,r)=>s+r.net,0);
-  const diff      = thisTotal - prevTotal;
-  const diffSign  = diff > 0 ? '+' : '';
-  const diffClass = diff > 0 ? 'dc-up' : diff < 0 ? 'dc-down' : 'dc-same';
+  const sel       = summary.filter(r => selected.has(r.emp_id));
+  const latestTotal = sel.filter(r => r.year===latestYear && r.month===latestMonth).reduce((s,r)=>s+r.net,0);
+  const prevTotal   = sel.filter(r => r.year===prevYear   && r.month===prevMonth  ).reduce((s,r)=>s+r.net,0);
+  const diff        = latestTotal - prevTotal;
+  const diffSign    = diff > 0 ? '+' : '';
+  const diffClass   = diff > 0 ? 'dc-up' : diff < 0 ? 'dc-down' : 'dc-same';
 
-  // 최근 12개월 레이블
+  // 연간 누적 합계 (선택 직원)
+  const yearTotal = sel.filter(r => r.year === latestYear).reduce((s,r)=>s+r.net,0);
+
+  // 최근 12개월 레이블 (최신 정산월 기준)
   const monthLabels = [];
   for (let i = 11; i >= 0; i--) {
-    const d = new Date(thisYear, thisMonth - 1 - i, 1);
+    const d = new Date(latestYear, latestMonth - 1 - i, 1);
     monthLabels.push(`${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}`);
   }
 
-  // 직원별 월별 데이터셋 (라인 차트)
   const empEntries = [...empMap.entries()];
-  const lineDatasets = empEntries
-    .filter(([id]) => selected.has(id))
-    .map(([id, name], i) => ({
+  const selEntries = empEntries.filter(([id]) => selected.has(id));
+
+  // ── 월별 급여 추이 데이터셋 ──────────────────────────────────
+  const lineDatasets = selEntries.map(([id, name], i) => {
+    const color = DASH_COLORS[i % DASH_COLORS.length];
+    return {
       label: name,
       data: monthLabels.map(label => {
         const [y, m] = label.split('.').map(Number);
         const rec = summary.find(r => r.emp_id===id && r.year===y && r.month===m);
         return rec ? rec.net : null;
       }),
-      borderColor:     DASH_COLORS[i % DASH_COLORS.length],
-      backgroundColor: DASH_COLORS[i % DASH_COLORS.length],
-      tension: 0.3, spanGaps: true, pointRadius: 4,
-    }));
+      borderColor: color,
+      backgroundColor: color,
+      borderWidth: 2.5,
+      tension: 0.4,
+      spanGaps: true,
+      pointRadius: 5,
+      pointHoverRadius: 7,
+      pointBackgroundColor: '#fff',
+      pointBorderWidth: 2.5,
+      pointBorderColor: color,
+    };
+  });
 
-  // 직원별 최근 급여 — summary가 DESC 정렬이므로 첫 등장이 가장 최신
+  // ── 누적 급여 데이터셋 ──────────────────────────────────────
+  const cumDatasets = selEntries.map(([id, name], i) => {
+    const color = DASH_COLORS[i % DASH_COLORS.length];
+    let cum = 0;
+    const data = monthLabels.map(label => {
+      const [y, m] = label.split('.').map(Number);
+      const rec = summary.find(r => r.emp_id===id && r.year===y && r.month===m);
+      if (rec) cum += rec.net;
+      return cum || null;
+    });
+    return {
+      label: name,
+      data,
+      borderColor: color,
+      backgroundColor: DASH_COLORS_BG[i % DASH_COLORS_BG.length],
+      borderWidth: 2,
+      tension: 0.4,
+      fill: true,
+      spanGaps: true,
+      pointRadius: 3,
+      pointHoverRadius: 6,
+    };
+  });
+
+  // ── 직원별 최근 급여 (첫 등장 = 가장 최신) ────────────────────
   const seenLatest = new Set();
-  const empLatest = [];
+  const empLatest  = [];
   for (const r of summary) {
     if (selected.has(r.emp_id) && !seenLatest.has(r.emp_id)) {
       seenLatest.add(r.emp_id);
@@ -1926,13 +1994,24 @@ function renderDashboard() {
   }
   empLatest.sort((a,b) => b.net - a.net);
 
-  // 직원 선택 칩
-  const chipHtml = empEntries.map(([id, name]) => {
+  // ── 직원 선택 칩 ───────────────────────────────────────────
+  const allOn   = selected.size === empMap.size;
+  const chipHtml = empEntries.map(([id, name], i) => {
     const on = selected.has(id);
-    return `<button class="emp-check-item ${on?'checked':''}" onclick="toggleDashEmp('${id}')" aria-pressed="${on}">${name}</button>`;
+    const dot = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${DASH_COLORS[i%DASH_COLORS.length]};margin-right:5px;vertical-align:middle"></span>`;
+    return `<button class="emp-check-item ${on?'checked':''}" onclick="toggleDashEmp('${id}')" aria-pressed="${on}">${dot}${name}</button>`;
   }).join('');
-  const allOn = selected.size === empMap.size;
 
+  // ── 공통 차트 옵션 ───────────────────────────────────────────
+  const tooltipMoney = {
+    callbacks: {
+      label: ctx => ` ${ctx.dataset.label}: ${f(ctx.parsed.y)}원`
+    }
+  };
+  const scaleY = { ticks: { callback: v => fm(v), font:{size:10} }, grid: { color:'#f5f5f5', drawBorder:false } };
+  const scaleX = { grid: { display:false }, ticks: { font:{size:10} } };
+
+  // ── HTML 렌더링 ──────────────────────────────────────────────
   document.getElementById('dash-content').innerHTML = `
     <div class="dash-summary">
       <div class="dash-card">
@@ -1941,20 +2020,20 @@ function renderDashboard() {
         <div class="dc-sub">전체 기록 ${summary.length}건</div>
       </div>
       <div class="dash-card">
-        <div class="dc-label">이번 달 인건비</div>
-        <div class="dc-value">${thisTotal ? f(thisTotal)+'원' : '-'}</div>
-        <div class="dc-sub">${thisYear}년 ${thisMonth}월 합계</div>
+        <div class="dc-label">최근 정산 인건비</div>
+        <div class="dc-value">${latestTotal ? f(latestTotal)+'원' : '-'}</div>
+        <div class="dc-sub">${latestYear}년 ${latestMonth}월 기준</div>
       </div>
       <div class="dash-card">
         <div class="dc-label">전월 대비</div>
-        <div class="dc-value ${diffClass}">${(prevTotal||thisTotal) ? diffSign+f(diff)+'원' : '-'}</div>
-        <div class="dc-sub">지난달 ${prevTotal ? f(prevTotal)+'원' : '기록 없음'}</div>
+        <div class="dc-value ${diffClass}">${(prevTotal||latestTotal) ? diffSign+f(diff)+'원' : '-'}</div>
+        <div class="dc-sub">전월 ${prevTotal ? f(prevTotal)+'원' : '기록 없음'} · ${latestYear}년 누계 ${f(yearTotal)}원</div>
       </div>
     </div>
 
-    <div class="filter-section" style="margin-bottom:var(--space-5)">
+    <div class="filter-section" style="margin-bottom:var(--space-4)">
       <span class="filter-label">직원 선택</span>
-      <div style="display:flex;gap:var(--space-2);flex-wrap:wrap">
+      <div style="display:flex;gap:var(--space-2);flex-wrap:wrap;margin-top:var(--space-2)">
         <button class="emp-check-item ${allOn?'checked':''}" onclick="toggleAllDashEmps()" aria-pressed="${allOn}">전체</button>
         ${chipHtml}
       </div>
@@ -1962,52 +2041,83 @@ function renderDashboard() {
 
     <div class="dash-charts">
       <div class="dash-chart-box full">
-        <div class="dash-chart-title">월별 급여 추이 (최근 12개월)</div>
-        <canvas id="chart-monthly" height="75"></canvas>
+        <div class="dash-chart-title">월별 급여 추이</div>
+        <div class="dash-chart-sub">최근 12개월 · 최신 정산월 기준</div>
+        <canvas id="chart-monthly" height="70"></canvas>
       </div>
       <div class="dash-chart-box full">
-        <div class="dash-chart-title">직원별 최근 급여</div>
-        <canvas id="chart-emp" height="55"></canvas>
+        <div class="dash-chart-title">누적 급여</div>
+        <div class="dash-chart-sub">최근 12개월 누적 실입금액</div>
+        <canvas id="chart-cum" height="70"></canvas>
+      </div>
+      <div class="dash-chart-box full">
+        <div class="dash-chart-title">직원별 최근 정산 급여</div>
+        <div class="dash-chart-sub">각 직원의 가장 최근 정산 기준</div>
+        <canvas id="chart-emp" height="50"></canvas>
       </div>
     </div>`;
 
-  // 월별 라인 차트
+  // ── 월별 급여 라인 차트 ─────────────────────────────────────
   dashCharts.monthly = new Chart(document.getElementById('chart-monthly'), {
     type: 'line',
     data: { labels: monthLabels, datasets: lineDatasets },
     options: {
-      plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } },
-      scales: {
-        y: { ticks: { callback: v => (v/10000).toFixed(0)+'만' }, grid: { color: '#f0f0f0' } },
-        x: { grid: { display: false } }
-      }
+      responsive: true,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position:'bottom', labels:{ boxWidth:10, padding:16, font:{size:11} } },
+        tooltip: tooltipMoney,
+      },
+      scales: { y: scaleY, x: scaleX }
     }
   });
 
-  // 직원별 최근 급여 가로 바 차트
+  // ── 누적 급여 에어리어 차트 ─────────────────────────────────
+  dashCharts.cum = new Chart(document.getElementById('chart-cum'), {
+    type: 'line',
+    data: { labels: monthLabels, datasets: cumDatasets },
+    options: {
+      responsive: true,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position:'bottom', labels:{ boxWidth:10, padding:16, font:{size:11} } },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${f(ctx.parsed.y)}원 (누계)` } },
+      },
+      scales: { y: scaleY, x: scaleX }
+    }
+  });
+
+  // ── 직원별 최근 급여 가로 바 차트 ─────────────────────────────
   dashCharts.emp = new Chart(document.getElementById('chart-emp'), {
     type: 'bar',
     data: {
-      labels: empLatest.map(r => {
-        const rec = summary.find(s => s.emp_id===r.emp_id);
-        return `${r.emp_name} (${r.year}.${String(r.month).padStart(2,'0')})`;
-      }),
+      labels: empLatest.map(r => `${r.emp_name}  (${r.year}.${String(r.month).padStart(2,'0')})`),
       datasets: [{
         label: '실입금',
         data: empLatest.map(r => r.net),
         backgroundColor: empLatest.map(r => {
           const idx = empEntries.findIndex(([id]) => id === r.emp_id);
+          return DASH_COLORS_BG[idx % DASH_COLORS_BG.length];
+        }),
+        borderColor: empLatest.map(r => {
+          const idx = empEntries.findIndex(([id]) => id === r.emp_id);
           return DASH_COLORS[idx % DASH_COLORS.length];
         }),
-        borderRadius: 4,
+        borderWidth: 2,
+        borderRadius: 6,
+        borderSkipped: false,
       }]
     },
     options: {
       indexAxis: 'y',
-      plugins: { legend: { display: false } },
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => ` ${f(ctx.parsed.x)}원` } },
+      },
       scales: {
-        x: { ticks: { callback: v => (v/10000).toFixed(0)+'만' }, grid: { color: '#f0f0f0' } },
-        y: { grid: { display: false } }
+        x: { ticks:{ callback: v => fm(v), font:{size:10} }, grid:{ color:'#f5f5f5', drawBorder:false } },
+        y: { grid:{ display:false }, ticks:{ font:{size:11} } }
       }
     }
   });
