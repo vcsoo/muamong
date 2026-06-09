@@ -7,6 +7,7 @@
 <link rel="icon" type="image/png" href="/static/logo/favicon.ico">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 <style>
 :root{
   --color-bg:#fff;
@@ -391,6 +392,24 @@ select:focus-visible,
 .upload-zone .icon{font-size:3.2rem;margin-bottom:var(--space-3);display:block}
 .upload-zone p{font-size:1.4rem;font-weight:500;color:#444;margin-bottom:var(--space-1)}
 
+/* ── 대시보드 ── */
+.dash-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--space-4);margin-bottom:var(--space-6)}
+.dash-card{background:#f8f8f8;border:1px solid var(--color-border);border-radius:var(--radius-md);padding:var(--space-4) var(--space-5)}
+.dash-card .dc-label{font-size:1.1rem;font-weight:700;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.04em;margin-bottom:var(--space-2)}
+.dash-card .dc-value{font-size:2.4rem;font-weight:700;color:var(--color-text-primary);line-height:1}
+.dash-card .dc-sub{font-size:1.2rem;color:var(--color-text-secondary);margin-top:var(--space-1)}
+.dc-up{color:#27ae60}.dc-down{color:var(--color-danger)}.dc-same{color:#888}
+.dash-charts{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-5);margin-bottom:var(--space-5)}
+.dash-chart-box{background:#fff;border:1px solid var(--color-border);border-radius:var(--radius-md);padding:var(--space-5)}
+.dash-chart-box.full{grid-column:1/-1}
+.dash-chart-title{font-size:1.3rem;font-weight:700;color:var(--color-text-primary);margin-bottom:var(--space-4)}
+.dash-empty{color:#bbb;text-align:center;padding:var(--space-8) 0;font-size:1.3rem}
+.dash-loading{color:#bbb;text-align:center;padding:var(--space-8) 0;font-size:1.3rem}
+
+/* ── 로그아웃 버튼 ── */
+.logout-btn{background:none;border:1px solid var(--color-border);border-radius:var(--radius-sm);font-family:inherit;font-size:1.2rem;color:var(--color-text-secondary);padding:var(--space-1) var(--space-3);cursor:pointer;transition:.15s;margin-left:var(--space-3)}
+.logout-btn:hover{background:#f5f5f5;color:var(--color-text-primary)}
+
 @media(max-width:720px){
   /* 레이아웃 */
   .container{padding:var(--space-3)}
@@ -434,6 +453,11 @@ select:focus-visible,
   .login-box img.login-logo{height:36px}
   .login-fields input{font-size:1.6rem;padding:var(--space-3) var(--space-4)}
   .login-btn{font-size:1.5rem;padding:var(--space-3) 0}
+
+  /* 대시보드 */
+  .dash-summary{grid-template-columns:1fr}
+  .dash-charts{grid-template-columns:1fr}
+  .dash-chart-box.full{grid-column:1}
 }
 </style>
 </head>
@@ -446,7 +470,9 @@ select:focus-visible,
   <nav role="tablist" aria-label="메인 메뉴">
     <button role="tab" aria-selected="true" aria-controls="tab-payroll" id="nav-payroll" class="active" onclick="switchTab('payroll',this)">급여 계산</button>
     <button role="tab" aria-selected="false" aria-controls="tab-employees" id="nav-employees" onclick="switchTab('employees',this)">직원 관리</button>
+    <button role="tab" aria-selected="false" aria-controls="tab-dashboard" id="nav-dashboard" onclick="switchTab('dashboard',this)">대시보드</button>
   </nav>
+  <button class="logout-btn" onclick="doLogout()">로그아웃</button>
 </header>
 
 <div class="container">
@@ -596,6 +622,17 @@ select:focus-visible,
     </div>
   </div>
 
+  <!-- ── 대시보드 ──────────────────────────────────────────────── -->
+  <div id="tab-dashboard" class="tab-pane card" role="tabpanel" aria-labelledby="nav-dashboard">
+    <div class="tab-header">
+      <div>
+        <div class="tab-title">대시보드</div>
+        <div class="tab-desc">급여 현황 요약</div>
+      </div>
+    </div>
+    <div id="dash-content"><div class="dash-loading">데이터 불러오는 중…</div></div>
+  </div>
+
 </div>
 
 <!-- 로그인 화면 -->
@@ -655,32 +692,50 @@ window.addEventListener('unhandledrejection', function(e) {
   document.body.appendChild(d);
 });
 
-// ── 로그인 ─────────────────────────────────────────────────────────────────
+// ── 인증 ────────────────────────────────────────────────────────────────────
+function showLoginScreen() {
+  document.getElementById('login-screen').classList.remove('hidden');
+}
+
 (function() {
-  if (sessionStorage.getItem('auth') === '1') {
-    document.getElementById('login-screen').classList.add('hidden');
-  }
-  document.getElementById('login-pw').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') doLogin();
-  });
-  document.getElementById('login-id').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') document.getElementById('login-pw').focus();
-  });
+  document.getElementById('login-pw').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+  document.getElementById('login-id').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('login-pw').focus(); });
 })();
 
-function doLogin() {
+async function doLogin() {
   const id = document.getElementById('login-id').value.trim();
   const pw = document.getElementById('login-pw').value;
-  if (id === 'muamong' && pw === 'muamong') {
-    sessionStorage.setItem('auth', '1');
-    document.getElementById('login-screen').classList.add('hidden');
-  } else {
-    const err = document.getElementById('login-error');
-    err.textContent = '아이디 또는 비밀번호가 올바르지 않습니다.';
-    document.getElementById('login-pw').value = '';
-    document.getElementById('login-pw').focus();
-    setTimeout(() => { err.textContent = ''; }, 3000);
+  const err = document.getElementById('login-error');
+  try {
+    const r = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, pass: pw }),
+    });
+    if (r.ok) {
+      document.getElementById('login-screen').classList.add('hidden');
+      loadEmployees();
+    } else {
+      err.textContent = '아이디 또는 비밀번호가 올바르지 않습니다.';
+      document.getElementById('login-pw').value = '';
+      document.getElementById('login-pw').focus();
+      setTimeout(() => { err.textContent = ''; }, 3000);
+    }
+  } catch {
+    err.textContent = '서버 오류가 발생했습니다.';
   }
+}
+
+async function doLogout() {
+  await fetch('/api/logout', { method: 'POST' });
+  showLoginScreen();
+}
+
+// API 호출 래퍼 — 401 시 로그인 화면으로
+async function apiFetch(url, options = {}) {
+  const r = await fetch(url, options);
+  if (r.status === 401) { showLoginScreen(); throw new Error('Unauthorized'); }
+  return r;
 }
 
 let employees = [];
@@ -819,10 +874,12 @@ function parseSalesXls(arrayBuffer, filename) {
 
 // ── 직원 로드 ───────────────────────────────────────────────────────────────
 async function loadEmployees() {
-  const r = await fetch('/employees');
-  employees = await r.json();
-  renderEmpGrid();
-  renderEmpSelector();
+  try {
+    const r = await apiFetch('/employees');
+    employees = await r.json();
+    renderEmpGrid();
+    renderEmpSelector();
+  } catch {}
 }
 
 let selectedDetailEmpId = null;
@@ -861,7 +918,7 @@ async function renderEmpDetailPanel(empId) {
   if (!panel) return;
   const e = employees.find(x => x.id === empId);
   if (!e) return;
-  const recs = await fetch(`/salary/${e.id}`).then(r => r.json());
+  const recs = await apiFetch(`/salary/${e.id}`).then(r => r.json());
   const keys = Object.keys(recs).sort().reverse();
 
   const tableRows = keys.map(k => {
@@ -961,6 +1018,7 @@ function switchTab(name, btn) {
   btn.classList.add('active');
   btn.setAttribute('aria-selected','true');
   if (name === 'employees') renderEmpGrid();
+  if (name === 'dashboard') loadDashboard();
 }
 
 // ── 파일 업로드 (브라우저 파싱) ──────────────────────────────────────────────
@@ -1207,7 +1265,7 @@ async function saveSalary() {
     purchase_items: getPurchaseItems(),
     payment_details: { cash: salesData.cash, card: salesData.card, pay: salesData.pay },
   };
-  const r = await fetch('/salary', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  const r = await apiFetch('/salary', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
   const result = await r.json();
   if (result.ok) { showToast('✅ 저장 완료!'); renderEmpGrid(); }
   else showToast('저장 실패: ' + (result.error || ''));
@@ -1364,7 +1422,7 @@ ${pTotal>0?`<p class="note">※ 점판 : ${f(pTotal)} &nbsp;부가세(${f(Math.f
 async function printPayslipFromRecord(empId, year, month) {
   const emp = employees.find(e => e.id === empId);
   if (!emp) return;
-  const r = await fetch(`/salary/${empId}/${year}/${month}`);
+  const r = await apiFetch(`/salary/${empId}/${year}/${month}`);
   if (r.status === 204) { showToast('기록을 찾을 수 없습니다'); return; }
   const rec = await r.json();
 
@@ -1499,13 +1557,13 @@ ${pTotal>0?`<p class="note">※ 점판 : ${f(pTotal)} &nbsp;부가세(${f(Math.f
 
 async function deleteSalary(empId, year, month) {
   if (!confirm(`${year}년 ${month}월 급여 기록을 삭제할까요?`)) return;
-  await fetch(`/salary/${empId}/${year}/${month}`, { method: 'DELETE' });
+  await apiFetch(`/salary/${empId}/${year}/${month}`, { method: 'DELETE' });
   showToast('삭제되었습니다');
   renderEmpGrid();
 }
 
 async function loadSavedRecord(empId, year, month) {
-  const r = await fetch(`/salary/${empId}/${year}/${month}`);
+  const r = await apiFetch(`/salary/${empId}/${year}/${month}`);
   if (r.status === 204) { showToast('기록을 찾을 수 없습니다'); return; }
   const rec = await r.json();
 
@@ -1527,7 +1585,7 @@ async function checkSavedRecord() {
   const year  = document.getElementById('sel-year').value;
   const month = document.getElementById('sel-month').value;
   if (!year || !month) return;
-  const r = await fetch(`/salary/${selectedEmpId}/${year}/${month}`);
+  const r = await apiFetch(`/salary/${selectedEmpId}/${year}/${month}`);
   if (r.status === 204) {
     salesData = null;
     document.getElementById('sales-summary').style.display = 'none';
@@ -1621,7 +1679,7 @@ async function selectHistoryEmp(id) {
   selectedHistoryEmpId = id;
   renderHistoryEmpCheckboxes();
   if (!historyAllData[id]) {
-    const r = await fetch(`/salary/${id}`);
+    const r = await apiFetch(`/salary/${id}`);
     historyAllData[id] = await r.json();
   }
   renderHistoryCombined();
@@ -1751,7 +1809,7 @@ async function saveEmployee() {
   const body   = { name, salon, commission_rate: rate, product_commission_rate: prate, role };
   const url    = editingId ? `/employees/${editingId}` : '/employees';
   const method = editingId ? 'PUT' : 'POST';
-  await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  await apiFetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
   closeModal();
   await loadEmployees();
   if (salesData) renderCalc();
@@ -1759,7 +1817,7 @@ async function saveEmployee() {
 }
 async function deleteEmployee(id) {
   if (!confirm('삭제하시겠습니까?')) return;
-  await fetch(`/employees/${id}`, { method: 'DELETE' });
+  await apiFetch(`/employees/${id}`, { method: 'DELETE' });
   if (selectedEmpId === id) { selectedEmpId = null; renderCalc(); }
   await loadEmployees();
   showToast('삭제되었습니다');
@@ -1774,6 +1832,139 @@ function showToast(msg) {
 document.getElementById('modal-overlay').addEventListener('click', e => {
   if (e.target === e.currentTarget) closeModal();
 });
+
+// ── 대시보드 ─────────────────────────────────────────────────────────────────
+let dashCharts = {};
+
+function destroyCharts() {
+  Object.values(dashCharts).forEach(c => c.destroy());
+  dashCharts = {};
+}
+
+async function loadDashboard() {
+  const box = document.getElementById('dash-content');
+  box.innerHTML = '<div class="dash-loading">데이터 불러오는 중…</div>';
+  destroyCharts();
+
+  let summary;
+  try {
+    const r = await apiFetch('/salary/summary');
+    summary = await r.json();
+  } catch { return; }
+
+  if (!summary.length) {
+    box.innerHTML = '<div class="dash-empty">저장된 급여 기록이 없습니다</div>';
+    return;
+  }
+
+  // ── 집계 ─────────────────────────────────────────
+  const now = new Date();
+  const thisYear  = now.getFullYear();
+  const thisMonth = now.getMonth() + 1;
+  const prevMonth = thisMonth === 1 ? 12 : thisMonth - 1;
+  const prevYear  = thisMonth === 1 ? thisYear - 1 : thisYear;
+
+  const thisKey = `${thisYear}-${String(thisMonth).padStart(2,'0')}`;
+  const prevKey = `${prevYear}-${String(prevMonth).padStart(2,'0')}`;
+
+  const thisTotal = summary.filter(r => r.year===thisYear && r.month===thisMonth).reduce((s,r)=>s+r.net,0);
+  const prevTotal = summary.filter(r => r.year===prevYear && r.month===prevMonth).reduce((s,r)=>s+r.net,0);
+  const empSet    = new Set(summary.map(r => r.emp_id));
+  const diff      = thisTotal - prevTotal;
+  const diffSign  = diff > 0 ? '+' : diff < 0 ? '' : '';
+  const diffClass = diff > 0 ? 'dc-up' : diff < 0 ? 'dc-down' : 'dc-same';
+
+  // 최근 12개월 레이블
+  const monthLabels = [];
+  for (let i = 11; i >= 0; i--) {
+    const d = new Date(thisYear, thisMonth - 1 - i, 1);
+    monthLabels.push(`${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}`);
+  }
+  const monthTotals = monthLabels.map(label => {
+    const [y, m] = label.split('.').map(Number);
+    return summary.filter(r => r.year===y && r.month===m).reduce((s,r)=>s+r.net,0);
+  });
+
+  // 직원별 최근 급여
+  const empNames = [...new Map(summary.map(r => [r.emp_id, r.emp_name])).entries()].map(([,n])=>n);
+  const empLatest = [...new Map(summary.map(r => [r.emp_id, r])).values()]
+    .sort((a,b) => b.net - a.net);
+
+  const f = n => (n||0).toLocaleString('ko-KR');
+
+  // ── HTML ─────────────────────────────────────────
+  box.innerHTML = `
+    <div class="dash-summary">
+      <div class="dash-card">
+        <div class="dc-label">등록 직원</div>
+        <div class="dc-value">${empSet.size}명</div>
+        <div class="dc-sub">총 기록 ${summary.length}건</div>
+      </div>
+      <div class="dash-card">
+        <div class="dc-label">이번 달 인건비</div>
+        <div class="dc-value">${thisTotal ? f(thisTotal)+'원' : '-'}</div>
+        <div class="dc-sub">${thisYear}년 ${thisMonth}월 합계</div>
+      </div>
+      <div class="dash-card">
+        <div class="dc-label">전월 대비</div>
+        <div class="dc-value ${diffClass}">${prevTotal && thisTotal ? diffSign+f(diff)+'원' : '-'}</div>
+        <div class="dc-sub">지난달 ${prevTotal ? f(prevTotal)+'원' : '기록 없음'}</div>
+      </div>
+    </div>
+    <div class="dash-charts">
+      <div class="dash-chart-box full">
+        <div class="dash-chart-title">월별 총 인건비 (최근 12개월)</div>
+        <canvas id="chart-monthly" height="80"></canvas>
+      </div>
+      <div class="dash-chart-box full">
+        <div class="dash-chart-title">직원별 최근 급여</div>
+        <canvas id="chart-emp" height="60"></canvas>
+      </div>
+    </div>`;
+
+  // ── 월별 차트 ─────────────────────────────────────
+  dashCharts.monthly = new Chart(document.getElementById('chart-monthly'), {
+    type: 'bar',
+    data: {
+      labels: monthLabels,
+      datasets: [{
+        label: '실입금 합계',
+        data: monthTotals,
+        backgroundColor: monthLabels.map(l => l === thisKey.replace('-','.') ? '#111' : '#d0d0d0'),
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { ticks: { callback: v => (v/10000)+'만' }, grid: { color: '#f0f0f0' } },
+        x: { grid: { display: false } }
+      }
+    }
+  });
+
+  // ── 직원별 차트 ──────────────────────────────────
+  dashCharts.emp = new Chart(document.getElementById('chart-emp'), {
+    type: 'bar',
+    data: {
+      labels: empLatest.map(r => r.emp_name),
+      datasets: [{
+        label: '최근 실입금',
+        data: empLatest.map(r => r.net),
+        backgroundColor: '#333',
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { callback: v => (v/10000)+'만' }, grid: { color: '#f0f0f0' } },
+        y: { grid: { display: false } }
+      }
+    }
+  });
+}
 
 loadEmployees();
 </script>
