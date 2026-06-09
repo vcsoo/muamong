@@ -94,7 +94,7 @@ footer.site-footer .copyright{font-size:1.1rem;color:#555;line-height:1}
 .emp-records-title{font-size:1.3rem;font-weight:700;color:var(--color-text-secondary);margin-bottom:var(--space-3);text-transform:uppercase;letter-spacing:.04em}
 
 /* ── Layout ── */
-.container{width:1280px;margin:0 auto;padding:var(--space-6) var(--space-6);flex:1}
+.container{width:100%;max-width:1280px;margin:0 auto;padding:var(--space-6) var(--space-6);flex:1}
 
 /* ── Tabs (hidden, nav replaces) ── */
 .tabs{display:none}
@@ -154,7 +154,7 @@ footer.site-footer .copyright{font-size:1.1rem;color:#555;line-height:1}
 /* ── 모달 ── */
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;justify-content:center;align-items:center}
 .modal-overlay.open{display:flex}
-.modal{background:#fff;border-radius:var(--radius-lg);padding:var(--space-7);width:440px;box-shadow:0 8px 32px rgba(0,0,0,.16)}
+.modal{background:#fff;border-radius:var(--radius-lg);padding:var(--space-7);width:440px;max-width:calc(100vw - 32px);box-shadow:0 8px 32px rgba(0,0,0,.16)}
 .modal h2{margin-bottom:var(--space-5);font-size:1.6rem;font-weight:700}
 .form-group{margin-bottom:var(--space-4)}
 .form-group label{display:block;font-size:1.2rem;color:var(--color-text-secondary);margin-bottom:var(--space-1);font-weight:600}
@@ -392,12 +392,44 @@ select:focus-visible,
 .upload-zone p{font-size:1.4rem;font-weight:500;color:#444;margin-bottom:var(--space-1)}
 
 @media(max-width:720px){
+  /* 레이아웃 */
+  .container{padding:var(--space-3)}
+  .card{padding:var(--space-4);margin-top:var(--space-3)}
+
+  /* 헤더 */
+  header{padding:0 var(--space-4)}
+  header nav button{padding:0 var(--space-3);font-size:1.3rem}
+
+  /* 급여 계산 탭 */
   .payroll-layout{grid-template-columns:1fr}
+  .payroll-left{border-right:none;border-bottom:1px solid var(--color-border);padding-right:0;padding-bottom:var(--space-4);margin-bottom:var(--space-4)}
   .summary-cards{grid-template-columns:1fr}
   .action-row{flex-direction:column}
-  header{padding:0 var(--space-4)}
-  .container{padding:var(--space-4)}
-  header nav button{padding:0 var(--space-3);font-size:1.3rem}
+  .product-edit-box{overflow-x:auto}
+  .purchase-box{overflow-x:auto}
+
+  /* 직원 관리 탭 */
+  .master-detail-layout{grid-template-columns:1fr}
+  .master-panel{border-right:none;padding-right:0;border-bottom:1px solid var(--color-border);padding-bottom:var(--space-4);margin-bottom:var(--space-4)}
+  .detail-panel{padding-left:0}
+  .emp-list-top{flex-wrap:wrap;gap:var(--space-2)}
+  .emp-list-right{width:100%;justify-content:flex-end}
+  .emp-detail-header{flex-wrap:wrap}
+  .emp-detail-actions{margin-left:0;width:100%}
+  .detail-panel .detail-table-wrap{overflow-x:auto}
+
+  /* 테이블 가로 스크롤 */
+  .product-table,.purchase-table{min-width:320px}
+
+  /* 모달 */
+  .modal{padding:var(--space-5)}
+
+  /* 푸터 */
+  footer.site-footer{padding:var(--space-4)}
+  footer.site-footer .footer-inner{flex-direction:column;align-items:flex-start;gap:var(--space-3)}
+  .footer-right{align-items:flex-start}
+
+  /* 로그인 */
   .login-box{gap:var(--space-4)}
   .login-box img.login-logo{height:36px}
   .login-fields input{font-size:1.6rem;padding:var(--space-3) var(--space-4)}
@@ -865,7 +897,7 @@ async function renderEmpDetailPanel(empId) {
       </div>
     </div>
     <div class="emp-records-title">월별 급여 기록 <span style="font-weight:400;color:#bbb">(${keys.length}건)</span></div>
-    ${keys.length ? `<table class="detail-table">
+    ${keys.length ? `<div style="overflow-x:auto;-webkit-overflow-scrolling:touch"><table class="detail-table">
       <thead><tr>
         <th>기간</th>
         <th style="text-align:right">시술매출</th>
@@ -876,7 +908,7 @@ async function renderEmpDetailPanel(empId) {
         <th style="text-align:center">작업</th>
       </tr></thead>
       <tbody>${tableRows}</tbody>
-    </table>`
+    </table></div>`
     : '<p style="color:#bbb;padding:var(--space-4) 0">저장된 급여 기록이 없습니다</p>'}`;
 }
 
