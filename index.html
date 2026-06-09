@@ -140,7 +140,7 @@ footer.site-footer .copyright{font-size:1.1rem;color:#555;line-height:1}
 /* ── 로그인 화면 ── */
 #login-screen{display:flex;position:fixed;inset:0;background:#fff;z-index:200;justify-content:center;align-items:center;flex-direction:column}
 #login-screen.hidden{display:none}
-.login-box{width:340px;display:flex;flex-direction:column;align-items:center;gap:var(--space-5)}
+.login-box{width:340px;max-width:calc(100vw - 48px);display:flex;flex-direction:column;align-items:center;gap:var(--space-5)}
 .login-box img.login-logo{height:44px;width:auto;margin-bottom:var(--space-2)}
 .login-box h1{font-size:1.8rem;font-weight:700;color:var(--color-text-primary);margin-bottom:var(--space-1);letter-spacing:-.02em}
 .login-box .login-sub{font-size:1.3rem;color:var(--color-text-secondary);margin-bottom:var(--space-2)}
@@ -398,6 +398,10 @@ select:focus-visible,
   header{padding:0 var(--space-4)}
   .container{padding:var(--space-4)}
   header nav button{padding:0 var(--space-3);font-size:1.3rem}
+  .login-box{gap:var(--space-4)}
+  .login-box img.login-logo{height:36px}
+  .login-fields input{font-size:1.6rem;padding:var(--space-3) var(--space-4)}
+  .login-btn{font-size:1.5rem;padding:var(--space-3) 0}
 }
 </style>
 </head>
