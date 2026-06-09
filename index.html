@@ -137,6 +137,20 @@ footer.site-footer .copyright{font-size:1.1rem;color:#555;line-height:1}
 .add-btn{margin-top:var(--space-4);padding:var(--space-2) var(--space-5);background:var(--color-accent);color:#fff;border:none;border-radius:var(--radius-md);cursor:pointer;font-size:1.4rem;font-family:inherit;display:inline-flex;align-items:center;gap:var(--space-1);transition:.15s;font-weight:500}
 .add-btn:hover{background:var(--color-accent-hover)}
 
+/* ── 로그인 화면 ── */
+#login-screen{display:flex;position:fixed;inset:0;background:#fff;z-index:200;justify-content:center;align-items:center;flex-direction:column}
+#login-screen.hidden{display:none}
+.login-box{width:340px;display:flex;flex-direction:column;align-items:center;gap:var(--space-5)}
+.login-box img.login-logo{height:44px;width:auto;margin-bottom:var(--space-2)}
+.login-box h1{font-size:1.8rem;font-weight:700;color:var(--color-text-primary);margin-bottom:var(--space-1);letter-spacing:-.02em}
+.login-box .login-sub{font-size:1.3rem;color:var(--color-text-secondary);margin-bottom:var(--space-2)}
+.login-fields{width:100%;display:flex;flex-direction:column;gap:var(--space-3)}
+.login-fields input{width:100%;padding:var(--space-3) var(--space-4);border:1px solid var(--color-border);border-radius:var(--radius-md);font-size:1.4rem;font-family:inherit;outline:none;transition:.15s}
+.login-fields input:focus{border-color:var(--color-text-primary);box-shadow:0 0 0 3px rgba(0,0,0,.08)}
+.login-btn{width:100%;padding:var(--space-3) 0;background:var(--color-accent);color:#fff;border:none;border-radius:var(--radius-md);font-size:1.4rem;font-family:inherit;font-weight:700;cursor:pointer;transition:.15s;letter-spacing:-.01em}
+.login-btn:hover{background:var(--color-accent-hover)}
+.login-error{font-size:1.2rem;color:var(--color-danger);min-height:1.6rem;text-align:center}
+
 /* ── 모달 ── */
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;justify-content:center;align-items:center}
 .modal-overlay.open{display:flex}
@@ -548,6 +562,23 @@ select:focus-visible,
 
 </div>
 
+<!-- 로그인 화면 -->
+<div id="login-screen">
+  <div class="login-box">
+    <img class="login-logo" src="/static/logo/wordmark.png" alt="무아몽헤어">
+    <div>
+      <div style="font-size:1.6rem;font-weight:700;text-align:center;margin-bottom:4px">급여 관리 시스템</div>
+      <div class="login-sub" style="text-align:center">로그인이 필요합니다</div>
+    </div>
+    <div class="login-fields">
+      <input type="text" id="login-id" placeholder="아이디" autocomplete="username">
+      <input type="password" id="login-pw" placeholder="비밀번호" autocomplete="current-password">
+    </div>
+    <div class="login-error" id="login-error"></div>
+    <button class="login-btn" onclick="doLogin()">로그인</button>
+  </div>
+</div>
+
 <!-- 직원 모달 -->
 <div class="modal-overlay" id="modal-overlay">
   <div class="modal">
@@ -587,6 +618,34 @@ window.addEventListener('unhandledrejection', function(e) {
   d.textContent = 'Promise 오류: ' + (e.reason?.message || e.reason);
   document.body.appendChild(d);
 });
+
+// ── 로그인 ─────────────────────────────────────────────────────────────────
+(function() {
+  if (sessionStorage.getItem('auth') === '1') {
+    document.getElementById('login-screen').classList.add('hidden');
+  }
+  document.getElementById('login-pw').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') doLogin();
+  });
+  document.getElementById('login-id').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') document.getElementById('login-pw').focus();
+  });
+})();
+
+function doLogin() {
+  const id = document.getElementById('login-id').value.trim();
+  const pw = document.getElementById('login-pw').value;
+  if (id === 'muamong' && pw === 'muamong') {
+    sessionStorage.setItem('auth', '1');
+    document.getElementById('login-screen').classList.add('hidden');
+  } else {
+    const err = document.getElementById('login-error');
+    err.textContent = '아이디 또는 비밀번호가 올바르지 않습니다.';
+    document.getElementById('login-pw').value = '';
+    document.getElementById('login-pw').focus();
+    setTimeout(() => { err.textContent = ''; }, 3000);
+  }
+}
 
 let employees = [];
 let selectedEmpId = null;
