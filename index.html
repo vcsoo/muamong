@@ -48,9 +48,8 @@ body{font-family:'Noto Sans KR','Malgun Gothic',sans-serif;font-size:1.4rem;line
 /* ── Header ── */
 header{background:#fff;border-bottom:1px solid var(--color-border);padding:0 var(--space-8);display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:50}
 header img.wordmark{height:28px;width:auto;flex-shrink:0}
-header nav{display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
-header nav::-webkit-scrollbar{display:none}
-header nav button{background:none;border:none;font-family:inherit;font-size:1.4rem;color:var(--color-text-secondary);padding:0 var(--space-5);height:56px;cursor:pointer;border-bottom:2px solid transparent;transition:.15s;letter-spacing:-.01em;white-space:nowrap;flex-shrink:0}
+header nav{display:flex}
+header nav button{background:none;border:none;font-family:inherit;font-size:1.4rem;color:var(--color-text-secondary);padding:0 var(--space-5);height:56px;cursor:pointer;border-bottom:2px solid transparent;transition:.15s;letter-spacing:-.01em;white-space:nowrap}
 header nav button:hover{color:var(--color-text-primary)}
 header nav button.active{color:var(--color-text-primary);font-weight:700;border-bottom:2px solid var(--color-text-primary)}
 
@@ -410,20 +409,16 @@ select:focus-visible,
 .dash-empty{color:#bbb;text-align:center;padding:var(--space-8) 0;font-size:1.3rem}
 .dash-loading{color:#bbb;text-align:center;padding:var(--space-8) 0;font-size:1.3rem}
 
-/* ── 로그아웃 버튼 ── */
-.logout-btn{background:none;border:1px solid var(--color-border);border-radius:var(--radius-sm);font-family:inherit;font-size:1.2rem;color:var(--color-text-secondary);padding:var(--space-1) var(--space-3);cursor:pointer;transition:.15s;margin-left:var(--space-3)}
-.logout-btn:hover{background:#f5f5f5;color:var(--color-text-primary)}
 
 @media(max-width:720px){
   /* 레이아웃 */
   .container{padding:var(--space-3)}
   .card{padding:var(--space-4);margin-top:var(--space-3)}
 
-  /* 헤더 — 로고+로그아웃 고정, 탭은 가로 스크롤 */
-  header{padding:0 var(--space-3);gap:0}
-  header img.wordmark{height:20px}
-  header nav button{padding:0 var(--space-3);font-size:1.25rem;height:56px}
-  .logout-btn{font-size:1.1rem;padding:var(--space-1) var(--space-2);margin-left:var(--space-2);flex-shrink:0}
+  /* 헤더 */
+  header{padding:0 var(--space-3)}
+  header img.wordmark{height:22px}
+  header nav button{padding:0 var(--space-2);font-size:1.2rem;height:56px;letter-spacing:-.02em}
 
   /* 급여 계산 탭 */
   .payroll-layout{grid-template-columns:1fr}
@@ -482,7 +477,6 @@ select:focus-visible,
     <button role="tab" aria-selected="false" aria-controls="tab-payroll"   id="nav-payroll"   onclick="switchTab('payroll',this)">급여 계산</button>
     <button role="tab" aria-selected="false" aria-controls="tab-employees" id="nav-employees" onclick="switchTab('employees',this)">직원 관리</button>
   </nav>
-  <button class="logout-btn" onclick="doLogout()">로그아웃</button>
 </header>
 
 <div class="container">
@@ -2159,6 +2153,7 @@ loadDashboard();
         <a class="family-link" href="https://naverv.pages.dev/" target="_blank" rel="noopener">네이버 순위체커</a>
       </div>
       <span class="copyright">© 2026 Muamong Hair. All Rights Reserved.</span>
+      <button onclick="doLogout()" style="margin-top:var(--space-2);background:none;border:1px solid #444;border-radius:4px;color:#888;font-size:1.1rem;font-family:inherit;padding:4px 12px;cursor:pointer;transition:.15s" onmouseover="this.style.color='#ccc'" onmouseout="this.style.color='#888'">로그아웃</button>
     </div>
   </div>
 </footer>
