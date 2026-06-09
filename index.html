@@ -461,7 +461,7 @@ select:focus-visible,
   .dash-summary .dash-card{padding:var(--space-3) var(--space-4)}
   .dash-summary .dash-card .dc-value{font-size:2rem}
   .dash-charts{grid-template-columns:1fr}
-  .dash-chart-box{padding:var(--space-4);grid-column:1 !important}
+  .dash-chart-box{padding:var(--space-4) var(--space-4) var(--space-5);grid-column:1 !important}
   .dash-chart-title{font-size:1.2rem}
 }
 </style>
@@ -2043,17 +2043,17 @@ function renderDashboard() {
       <div class="dash-chart-box full">
         <div class="dash-chart-title">월별 급여 추이</div>
         <div class="dash-chart-sub">최근 12개월 · 최신 정산월 기준</div>
-        <canvas id="chart-monthly" height="70"></canvas>
+        <canvas id="chart-monthly" height="90"></canvas>
       </div>
       <div class="dash-chart-box full">
         <div class="dash-chart-title">누적 급여</div>
         <div class="dash-chart-sub">최근 12개월 누적 실입금액</div>
-        <canvas id="chart-cum" height="70"></canvas>
+        <canvas id="chart-cum" height="90"></canvas>
       </div>
       <div class="dash-chart-box full">
         <div class="dash-chart-title">직원별 최근 정산 급여</div>
         <div class="dash-chart-sub">각 직원의 가장 최근 정산 기준</div>
-        <canvas id="chart-emp" height="50"></canvas>
+        <canvas id="chart-emp"></canvas>
       </div>
     </div>`;
 
@@ -2088,7 +2088,9 @@ function renderDashboard() {
   });
 
   // ── 직원별 최근 급여 가로 바 차트 ─────────────────────────────
-  dashCharts.emp = new Chart(document.getElementById('chart-emp'), {
+  const empCanvas = document.getElementById('chart-emp');
+  empCanvas.style.height = Math.max(80, empLatest.length * 52) + 'px';
+  dashCharts.emp = new Chart(empCanvas, {
     type: 'bar',
     data: {
       labels: empLatest.map(r => `${r.emp_name}  (${r.year}.${String(r.month).padStart(2,'0')})`),
@@ -2111,6 +2113,7 @@ function renderDashboard() {
     options: {
       indexAxis: 'y',
       responsive: true,
+      maintainAspectRatio: false,
       plugins: {
         legend: { display: false },
         tooltip: { callbacks: { label: ctx => ` ${f(ctx.parsed.x)}원` } },
