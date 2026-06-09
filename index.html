@@ -468,9 +468,9 @@ select:focus-visible,
     <img class="wordmark" src="/static/logo/wordmark.png" alt="MUAMONG">
   </a>
   <nav role="tablist" aria-label="메인 메뉴">
-    <button role="tab" aria-selected="true" aria-controls="tab-payroll" id="nav-payroll" class="active" onclick="switchTab('payroll',this)">급여 계산</button>
+    <button role="tab" aria-selected="true"  aria-controls="tab-dashboard" id="nav-dashboard" class="active" onclick="switchTab('dashboard',this)">대시보드</button>
+    <button role="tab" aria-selected="false" aria-controls="tab-payroll"   id="nav-payroll"   onclick="switchTab('payroll',this)">급여 계산</button>
     <button role="tab" aria-selected="false" aria-controls="tab-employees" id="nav-employees" onclick="switchTab('employees',this)">직원 관리</button>
-    <button role="tab" aria-selected="false" aria-controls="tab-dashboard" id="nav-dashboard" onclick="switchTab('dashboard',this)">대시보드</button>
   </nav>
   <button class="logout-btn" onclick="doLogout()">로그아웃</button>
 </header>
@@ -479,7 +479,7 @@ select:focus-visible,
   <div class="tabs" style="display:none"></div>
 
   <!-- ── 급여 계산 ──────────────────────────────────────────────── -->
-  <div id="tab-payroll" class="tab-pane active card" role="tabpanel" aria-labelledby="nav-payroll">
+  <div id="tab-payroll" class="tab-pane card" role="tabpanel" aria-labelledby="nav-payroll">
     <div class="payroll-layout">
 
       <!-- 좌: 직원 선택 -->
@@ -623,7 +623,7 @@ select:focus-visible,
   </div>
 
   <!-- ── 대시보드 ──────────────────────────────────────────────── -->
-  <div id="tab-dashboard" class="tab-pane card" role="tabpanel" aria-labelledby="nav-dashboard">
+  <div id="tab-dashboard" class="tab-pane active card" role="tabpanel" aria-labelledby="nav-dashboard">
     <div class="tab-header">
       <div>
         <div class="tab-title">대시보드</div>
@@ -1834,7 +1834,12 @@ document.getElementById('modal-overlay').addEventListener('click', e => {
 });
 
 // ── 대시보드 ─────────────────────────────────────────────────────────────────
+const DASH_COLORS = ['#111','#4472C4','#70AD47','#ED7D31','#5B9BD5','#FFC000','#A5A5A5','#264478'];
+
 let dashCharts = {};
+let dashSummaryData = null;
+let dashEmpMap = null;      // Map<emp_id, emp_name> — 등록 순서 유지
+let dashSelectedEmps = null; // Set<emp_id>
 
 function destroyCharts() {
   Object.values(dashCharts).forEach(c => c.destroy());
@@ -1846,32 +1851,45 @@ async function loadDashboard() {
   box.innerHTML = '<div class="dash-loading">데이터 불러오는 중…</div>';
   destroyCharts();
 
-  let summary;
   try {
     const r = await apiFetch('/salary/summary');
-    summary = await r.json();
+    dashSummaryData = await r.json();
   } catch { return; }
 
-  if (!summary.length) {
+  if (!dashSummaryData.length) {
     box.innerHTML = '<div class="dash-empty">저장된 급여 기록이 없습니다</div>';
     return;
   }
 
-  // ── 집계 ─────────────────────────────────────────
+  // 직원 목록 — summary는 DESC 정렬이므로 등장 순서 = 최신 기록 순
+  dashEmpMap = new Map();
+  for (const r of dashSummaryData) {
+    if (!dashEmpMap.has(r.emp_id)) dashEmpMap.set(r.emp_id, r.emp_name);
+  }
+  // 첫 로드 시 전체 선택
+  if (!dashSelectedEmps) dashSelectedEmps = new Set(dashEmpMap.keys());
+
+  renderDashboard();
+}
+
+function renderDashboard() {
+  destroyCharts();
+  const summary = dashSummaryData;
+  const empMap  = dashEmpMap;
+  const selected = dashSelectedEmps;
+  const f = n => (n||0).toLocaleString('ko-KR');
+
   const now = new Date();
   const thisYear  = now.getFullYear();
   const thisMonth = now.getMonth() + 1;
-  const prevMonth = thisMonth === 1 ? 12 : thisMonth - 1;
   const prevYear  = thisMonth === 1 ? thisYear - 1 : thisYear;
+  const prevMonth = thisMonth === 1 ? 12 : thisMonth - 1;
 
-  const thisKey = `${thisYear}-${String(thisMonth).padStart(2,'0')}`;
-  const prevKey = `${prevYear}-${String(prevMonth).padStart(2,'0')}`;
-
-  const thisTotal = summary.filter(r => r.year===thisYear && r.month===thisMonth).reduce((s,r)=>s+r.net,0);
-  const prevTotal = summary.filter(r => r.year===prevYear && r.month===prevMonth).reduce((s,r)=>s+r.net,0);
-  const empSet    = new Set(summary.map(r => r.emp_id));
+  const sel = summary.filter(r => selected.has(r.emp_id));
+  const thisTotal = sel.filter(r => r.year===thisYear && r.month===thisMonth).reduce((s,r)=>s+r.net,0);
+  const prevTotal = sel.filter(r => r.year===prevYear && r.month===prevMonth).reduce((s,r)=>s+r.net,0);
   const diff      = thisTotal - prevTotal;
-  const diffSign  = diff > 0 ? '+' : diff < 0 ? '' : '';
+  const diffSign  = diff > 0 ? '+' : '';
   const diffClass = diff > 0 ? 'dc-up' : diff < 0 ? 'dc-down' : 'dc-same';
 
   // 최근 12개월 레이블
@@ -1880,25 +1898,47 @@ async function loadDashboard() {
     const d = new Date(thisYear, thisMonth - 1 - i, 1);
     monthLabels.push(`${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}`);
   }
-  const monthTotals = monthLabels.map(label => {
-    const [y, m] = label.split('.').map(Number);
-    return summary.filter(r => r.year===y && r.month===m).reduce((s,r)=>s+r.net,0);
-  });
 
-  // 직원별 최근 급여
-  const empNames = [...new Map(summary.map(r => [r.emp_id, r.emp_name])).entries()].map(([,n])=>n);
-  const empLatest = [...new Map(summary.map(r => [r.emp_id, r])).values()]
-    .sort((a,b) => b.net - a.net);
+  // 직원별 월별 데이터셋 (라인 차트)
+  const empEntries = [...empMap.entries()];
+  const lineDatasets = empEntries
+    .filter(([id]) => selected.has(id))
+    .map(([id, name], i) => ({
+      label: name,
+      data: monthLabels.map(label => {
+        const [y, m] = label.split('.').map(Number);
+        const rec = summary.find(r => r.emp_id===id && r.year===y && r.month===m);
+        return rec ? rec.net : null;
+      }),
+      borderColor:     DASH_COLORS[i % DASH_COLORS.length],
+      backgroundColor: DASH_COLORS[i % DASH_COLORS.length],
+      tension: 0.3, spanGaps: true, pointRadius: 4,
+    }));
 
-  const f = n => (n||0).toLocaleString('ko-KR');
+  // 직원별 최근 급여 — summary가 DESC 정렬이므로 첫 등장이 가장 최신
+  const seenLatest = new Set();
+  const empLatest = [];
+  for (const r of summary) {
+    if (selected.has(r.emp_id) && !seenLatest.has(r.emp_id)) {
+      seenLatest.add(r.emp_id);
+      empLatest.push(r);
+    }
+  }
+  empLatest.sort((a,b) => b.net - a.net);
 
-  // ── HTML ─────────────────────────────────────────
-  box.innerHTML = `
+  // 직원 선택 칩
+  const chipHtml = empEntries.map(([id, name]) => {
+    const on = selected.has(id);
+    return `<button class="emp-check-item ${on?'checked':''}" onclick="toggleDashEmp('${id}')" aria-pressed="${on}">${name}</button>`;
+  }).join('');
+  const allOn = selected.size === empMap.size;
+
+  document.getElementById('dash-content').innerHTML = `
     <div class="dash-summary">
       <div class="dash-card">
-        <div class="dc-label">등록 직원</div>
-        <div class="dc-value">${empSet.size}명</div>
-        <div class="dc-sub">총 기록 ${summary.length}건</div>
+        <div class="dc-label">선택 직원</div>
+        <div class="dc-value">${selected.size} / ${empMap.size}명</div>
+        <div class="dc-sub">전체 기록 ${summary.length}건</div>
       </div>
       <div class="dash-card">
         <div class="dc-label">이번 달 인건비</div>
@@ -1907,51 +1947,58 @@ async function loadDashboard() {
       </div>
       <div class="dash-card">
         <div class="dc-label">전월 대비</div>
-        <div class="dc-value ${diffClass}">${prevTotal && thisTotal ? diffSign+f(diff)+'원' : '-'}</div>
+        <div class="dc-value ${diffClass}">${(prevTotal||thisTotal) ? diffSign+f(diff)+'원' : '-'}</div>
         <div class="dc-sub">지난달 ${prevTotal ? f(prevTotal)+'원' : '기록 없음'}</div>
       </div>
     </div>
+
+    <div class="filter-section" style="margin-bottom:var(--space-5)">
+      <span class="filter-label">직원 선택</span>
+      <div style="display:flex;gap:var(--space-2);flex-wrap:wrap">
+        <button class="emp-check-item ${allOn?'checked':''}" onclick="toggleAllDashEmps()" aria-pressed="${allOn}">전체</button>
+        ${chipHtml}
+      </div>
+    </div>
+
     <div class="dash-charts">
       <div class="dash-chart-box full">
-        <div class="dash-chart-title">월별 총 인건비 (최근 12개월)</div>
-        <canvas id="chart-monthly" height="80"></canvas>
+        <div class="dash-chart-title">월별 급여 추이 (최근 12개월)</div>
+        <canvas id="chart-monthly" height="75"></canvas>
       </div>
       <div class="dash-chart-box full">
         <div class="dash-chart-title">직원별 최근 급여</div>
-        <canvas id="chart-emp" height="60"></canvas>
+        <canvas id="chart-emp" height="55"></canvas>
       </div>
     </div>`;
 
-  // ── 월별 차트 ─────────────────────────────────────
+  // 월별 라인 차트
   dashCharts.monthly = new Chart(document.getElementById('chart-monthly'), {
-    type: 'bar',
-    data: {
-      labels: monthLabels,
-      datasets: [{
-        label: '실입금 합계',
-        data: monthTotals,
-        backgroundColor: monthLabels.map(l => l === thisKey.replace('-','.') ? '#111' : '#d0d0d0'),
-        borderRadius: 4,
-      }]
-    },
+    type: 'line',
+    data: { labels: monthLabels, datasets: lineDatasets },
     options: {
-      plugins: { legend: { display: false } },
+      plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } },
       scales: {
-        y: { ticks: { callback: v => (v/10000)+'만' }, grid: { color: '#f0f0f0' } },
+        y: { ticks: { callback: v => (v/10000).toFixed(0)+'만' }, grid: { color: '#f0f0f0' } },
         x: { grid: { display: false } }
       }
     }
   });
 
-  // ── 직원별 차트 ──────────────────────────────────
+  // 직원별 최근 급여 가로 바 차트
   dashCharts.emp = new Chart(document.getElementById('chart-emp'), {
     type: 'bar',
     data: {
-      labels: empLatest.map(r => r.emp_name),
+      labels: empLatest.map(r => {
+        const rec = summary.find(s => s.emp_id===r.emp_id);
+        return `${r.emp_name} (${r.year}.${String(r.month).padStart(2,'0')})`;
+      }),
       datasets: [{
-        label: '최근 실입금',
+        label: '실입금',
         data: empLatest.map(r => r.net),
-        backgroundColor: '#333',
+        backgroundColor: empLatest.map(r => {
+          const idx = empEntries.findIndex(([id]) => id === r.emp_id);
+          return DASH_COLORS[idx % DASH_COLORS.length];
+        }),
         borderRadius: 4,
       }]
     },
@@ -1959,14 +2006,31 @@ async function loadDashboard() {
       indexAxis: 'y',
       plugins: { legend: { display: false } },
       scales: {
-        x: { ticks: { callback: v => (v/10000)+'만' }, grid: { color: '#f0f0f0' } },
+        x: { ticks: { callback: v => (v/10000).toFixed(0)+'만' }, grid: { color: '#f0f0f0' } },
         y: { grid: { display: false } }
       }
     }
   });
 }
 
+function toggleDashEmp(empId) {
+  if (dashSelectedEmps.has(empId)) {
+    if (dashSelectedEmps.size === 1) return; // 최소 1명 유지
+    dashSelectedEmps.delete(empId);
+  } else {
+    dashSelectedEmps.add(empId);
+  }
+  renderDashboard();
+}
+
+function toggleAllDashEmps() {
+  if (dashSelectedEmps.size === dashEmpMap.size) return; // 이미 전체
+  dashSelectedEmps = new Set(dashEmpMap.keys());
+  renderDashboard();
+}
+
 loadEmployees();
+loadDashboard();
 </script>
 
 <footer class="site-footer">
