@@ -2043,17 +2043,17 @@ function renderDashboard() {
       <div class="dash-chart-box full">
         <div class="dash-chart-title">월별 급여 추이</div>
         <div class="dash-chart-sub">최근 12개월 · 최신 정산월 기준</div>
-        <canvas id="chart-monthly" height="90"></canvas>
+        <canvas id="chart-monthly" height="70"></canvas>
       </div>
       <div class="dash-chart-box full">
         <div class="dash-chart-title">누적 급여</div>
         <div class="dash-chart-sub">최근 12개월 누적 실입금액</div>
-        <canvas id="chart-cum" height="90"></canvas>
+        <canvas id="chart-cum" height="70"></canvas>
       </div>
       <div class="dash-chart-box full">
         <div class="dash-chart-title">직원별 최근 정산 급여</div>
         <div class="dash-chart-sub">각 직원의 가장 최근 정산 기준</div>
-        <canvas id="chart-emp"></canvas>
+        <div id="chart-emp-wrap" style="position:relative"><canvas id="chart-emp"></canvas></div>
       </div>
     </div>`;
 
@@ -2065,7 +2065,7 @@ function renderDashboard() {
       responsive: true,
       interaction: { mode: 'index', intersect: false },
       plugins: {
-        legend: { position:'bottom', labels:{ boxWidth:10, padding:16, font:{size:11} } },
+        legend: { position:'bottom', labels:{ boxWidth:10, padding:10, font:{size:11} } },
         tooltip: tooltipMoney,
       },
       scales: { y: scaleY, x: scaleX }
@@ -2080,7 +2080,7 @@ function renderDashboard() {
       responsive: true,
       interaction: { mode: 'index', intersect: false },
       plugins: {
-        legend: { position:'bottom', labels:{ boxWidth:10, padding:16, font:{size:11} } },
+        legend: { position:'bottom', labels:{ boxWidth:10, padding:10, font:{size:11} } },
         tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${f(ctx.parsed.y)}원 (누계)` } },
       },
       scales: { y: scaleY, x: scaleX }
@@ -2088,9 +2088,8 @@ function renderDashboard() {
   });
 
   // ── 직원별 최근 급여 가로 바 차트 ─────────────────────────────
-  const empCanvas = document.getElementById('chart-emp');
-  empCanvas.style.height = Math.max(80, empLatest.length * 52) + 'px';
-  dashCharts.emp = new Chart(empCanvas, {
+  document.getElementById('chart-emp-wrap').style.height = Math.max(80, empLatest.length * 52) + 'px';
+  dashCharts.emp = new Chart(document.getElementById('chart-emp'), {
     type: 'bar',
     data: {
       labels: empLatest.map(r => `${r.emp_name}  (${r.year}.${String(r.month).padStart(2,'0')})`),
